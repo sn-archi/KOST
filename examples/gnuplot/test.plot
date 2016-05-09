@@ -22,4 +22,3 @@ set zlabel "z"
 splot 'orbit.dat', sx(u,v),sy(u,v),sz(u,v)
 
 pause -1
-
