@@ -139,11 +139,11 @@ Added implementation of:
 
 #include "kost_elements.h"
 
-kostReal kostGetMeanAnomaly(
-	kostReal mu,                   /* standard gravitational parameter */
+btScalar kostGetMeanAnomaly(
+	btScalar mu,                   /* standard gravitational parameter */
 	const kostElements *elements)  /* pointer to orbital elements at epoch */
 {
-	kostReal meanAnomaly;
+	btScalar meanAnomaly;
 	/* calc mean anomaly */
 	meanAnomaly = elements->L - elements->omegab;
 
@@ -159,10 +159,10 @@ kostReal kostGetMeanAnomaly(
 
 int kostGetEccentricAnomaly(
 	const kostElements *elements,      /* pointer to orbital elements at epoch */
-	kostReal *eccentricAnomaly,        /* location where result will be stored */
-	kostReal meanAnomaly,              /* mean anomaly */
-	kostReal eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
-	kostReal maxRelativeError,         /* maximum relative error in eccentric anomaly */
+	btScalar *eccentricAnomaly,        /* location where result will be stored */
+	btScalar meanAnomaly,              /* mean anomaly */
+	btScalar eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
+	btScalar maxRelativeError,         /* maximum relative error in eccentric anomaly */
 	int maxIterations)                 /* max number of iterations for calculating eccentric anomaly */
 {
 	/* Code will terminate when either maxIterations or maxRelativeError is reached.
@@ -178,7 +178,7 @@ int kostGetEccentricAnomaly(
 	 * if iterations<=maxIterations return iterations, else return 0 */
 
 	int i;
-	kostReal relativeError, meanAnomalyEstimate, e;
+	btScalar relativeError, meanAnomalyEstimate, e;
 
 	if(elements->e == 0.0) /* circular orbit */
 	{
@@ -231,10 +231,10 @@ int kostGetEccentricAnomaly(
 }
 
 int kostGetTrueAnomaly(
-	kostReal mu,                  /* standard gravitational parameter */
+	btScalar mu,                  /* standard gravitational parameter */
 	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostReal *trueAnomaly,        /* location where result will be stored */
-	kostReal maxRelativeError,    /* maximum relative error in eccentric anomaly */
+	btScalar *trueAnomaly,        /* location where result will be stored */
+	btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
 	int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
 {
 	/* Returns number of iterations if successful, returns 0 otherwise. */
@@ -246,7 +246,7 @@ int kostGetTrueAnomaly(
 	 * calc true anomaly */
 
 	int ret;
-	kostReal meanAnomaly, eccentricAnomaly;
+	btScalar meanAnomaly, eccentricAnomaly;
 
 	/* get mean anomaly */
 	meanAnomaly = kostGetMeanAnomaly(mu,elements);
@@ -273,12 +273,12 @@ int kostGetTrueAnomaly(
 	return ret;
 }
 
-kostReal kostGetTrueAnomaly2(
-	kostReal mu,                  /* standard gravitational parameter */
+btScalar kostGetTrueAnomaly2(
+	btScalar mu,                  /* standard gravitational parameter */
 	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostReal eccentricAnomaly)    /* eccentric anomaly */
+	btScalar eccentricAnomaly)    /* eccentric anomaly */
 {
-	kostReal ret;
+	btScalar ret;
 	if (elements->e < 1.0) /* elliptical orbit */
 	{
 		ret = 2.0 * atan(sqrt((1.0+elements->e)/(1.0-elements->e)) * tan(eccentricAnomaly/2.0));
@@ -293,53 +293,53 @@ kostReal kostGetTrueAnomaly2(
 }
 
 void kostElements2StateVector2(
-	kostReal mu,                  /* standard gravitational parameter */
+	btScalar mu,                  /* standard gravitational parameter */
 	const kostElements *elements, /* pointer to orbital elements at epoch */
 	kostStateVector *state,       /* pointer to location where state vector at epoch will be stored */
-	kostReal trueAnomaly)         /* true anomaly */
+	btScalar trueAnomaly)         /* true anomaly */
 {
 	/* Pseudocode
 	 *
 	 * calc nodal vector, n
 	 * calc angular momentum vector, h
 	 * calc position vector
-	 *  calc argument of position
-	 *  calc direction of position vector
-	 *  calc length of position vector
+	 * calc argument of position
+	 * calc direction of position vector
+	 * calc length of position vector
 	 * calc velocity vector
-	 *  calculate magnitude of velocity vector
-	 *  calc components of velocity vector perpendicular and parallel to radius vector
-	 *  add to get velocity vector */
+	 * calculate magnitude of velocity vector
+	 * calc components of velocity vector perpendicular and parallel to radius vector
+	 * add to get velocity vector */
 
-	kostVector3 n; /* unit vector in direction of ascending node */
-	kostVector3 h; /* angular momentum vector */
-	kostVector3 north; /* unit vector pointing ecliptic north */
-	kostVector3 vPro, vO; /* prograde and outward components of velocity vector */
-	kostVector3 tmpv; /* temporary vector value */
-	kostReal argPos; /* argument of position, measured from the longitude of ascending node */
-	kostReal rPe, vPe; /* radius and velocity at periapsis */
-	kostReal v2; /* magnitude squared of velocity vector */
-	kostReal e; /* eccentricity */
-	kostReal tmpr; /* temporary real value */
+	btVector3 n; /* unit vector in direction of ascending node */
+	btVector3 h; /* angular momentum vector */
+	btVector3 north; /* unit vector pointing ecliptic north */
+	btVector3 vPro, vO; /* prograde and outward components of velocity vector */
+	btVector3 tmpv; /* temporary vector value */
+	btScalar argPos; /* argument of position, measured from the longitude of ascending node */
+	btScalar rPe, vPe; /* radius and velocity at periapsis */
+	btScalar v2; /* magnitude squared of velocity vector */
+	btScalar e; /* eccentricity */
+	btScalar tmpr; /* temporary real value */
 
 	e = elements->e;
 	if(e == 1.0) /* parabolic orbit - approximate to hyperbolic orbit */
 		e += KOST_VERYSMALL;
 
 	/* calc nodal vector */
-	n = kostConstructv(cos(elements->theta),sin(elements->theta),0.0);
+	n = btVector3(std::cos(elements->theta),0.0,std::sin(elements->theta));
 
 	/* equatorial north vector */
-	north = kostConstructv(0.0,0.0,1.0);
+	north = btVector3(0.0,1.0,0.0);
 
 	/* calc angular momentum vector, h */
-	/* projection of h in ecliptic (xy) plane */
-	h = kostCrossProductvv(&n, &north);
-	h = kostMulrv( sin(elements->i), &h);
+	/* projection of h in ecliptic (xz) plane */
+	h = n.cross(north);
+	h = std::sin(elements->i)*h;
 
 	/* elevation of h */
-	h.z = cos(elements->i);
-	h = kostNormalv(&h);
+	h.setZ() = cos(elements->i);
+	h.normalize() ;
 
 	/* calc magnitude of h */
 	/* calc radius and velocity at periapsis */
@@ -350,11 +350,11 @@ void kostElements2StateVector2(
 	}
 	else /* hyperbolic orbit */
 	{
-		rPe = fabs(elements->a) * (e * e - 1.0) / (1.0 + e);
-		vPe = sqrt(mu*(2.0/rPe + 1.0/fabs(elements->a)));
+		rPe = std::fabs(elements->a) * (e * e - 1.0) / (1.0 + e);
+		vPe = std::sqrt(mu*(2.0/rPe + 1.0/fabs(elements->a)));
 	}
 	/* calc h */
-	h = kostMulrv(rPe*vPe,&h);
+	h = (rPe*vPe)*h;
 
 	/* calc position vector */
 	/* calc argument of position */
@@ -364,65 +364,63 @@ void kostElements2StateVector2(
 	calc direction of position vector:
 	r/|r| = sin(ArgPos) * ((h / |h|) x n) + cos(argPos) * n
 	*/
-	tmpv = kostMulrv(cos(argPos), &n);
-	state->pos = kostNormalv(&h);
-	state->pos = kostCrossProductvv(&state->pos,&n);
-	state->pos = kostMulrv(sin(argPos), &(state->pos));
-	state->pos = kostAddvv(&(state->pos), &tmpv);
+	tmpv = std::cos(argPos)*n;
+	state->pos = h.normalized();
+	state->pos = state.pos.cross(n);
+	state->pos = sin(argPos)*state.pos;
+	state->pos = state.pos + tmpv;
 
 	/* calc length of position vector */
 	if (e < 1.0) /* elliptical orbit */
-		state->pos = kostMulrv(elements->a * (1.0 - e * e) /
-		(1.0 + e * cos(trueAnomaly)),&(state->pos));
+		state->pos = elements->a*(1.0 - e*e)/(1.0 + e*cos(trueAnomaly))*state->pos;
 	else /* hyperbolic orbit */
-		state->pos = kostMulrv(fabs(elements->a) * (e * e - 1.0) /
-		(1.0 + e * cos(trueAnomaly)),&(state->pos));
+		state->pos = fabs(elements->a)*(e*e - 1.0)/(1.0 + e*cos(trueAnomaly))*state->pos;
 
 	/* calc velocity vector */
 	/*  calculate magnitude of velocity vector */
 	if (e < 1.0) /* elliptical orbit */
-		{v2 = mu*(2.0/kostAbsv(&(state->pos)) - 1.0/elements->a);}
+		{v2 = mu*(2.0/state->pos.length()) - 1.0/elements->a);}
 	else /* hyperbolic orbit */
-		{v2 = mu*(2.0/kostAbsv(&(state->pos)) + 1.0/fabs(elements->a));}
+		{v2 = mu*(2.0/state->pos.length()) + 1.0/std::fabs(elements->a));}
 
 	/* calc components of velocity vector perpendicular and parallel to radius vector:
-	
+
 	perpendicular:
 	vPro = (|h|/|pos|) * normal(h x pos)
 
 	parallel:
 	vO = sqrt(v^2 - |vPro|^2) * sign(sin(trueAnomaly)) * normal(pos)
 	*/
-	vPro = kostCrossProductvv(&h, &(state->pos));
-	vPro = kostNormalv(&vPro);
-	vPro = kostMulrv( kostAbsv(&h)/kostAbsv(&(state->pos)) , &vPro);
+	vPro = h.cross(state->pos);
+	vPro.normalize();
+	vPro = h.length()/kostAbsv(state->pos)*vPro);
 
-	tmpr = sin(trueAnomaly);
+	tmpr = std::sin(trueAnomaly);
 	if(tmpr == 0.0) /* check for apsis condition to avoid divide by zero */
 	{
-		vO = kostConstructv(0.0,0.0,0.0);
+		vO = btVector3(0.0,0.0,0.0);
 	}
 	else
 	{
-		kostReal signSinTrueAnomaly = tmpr / fabs(tmpr);
+		btScalar signSinTrueAnomaly = tmpr / std::fabs(tmpr);
 
-		kostReal v0_sq = v2 - kostAbs2v(&vPro);
+		btScalar v0_sq = v2 - vPro.length2();
 		/* check for small negative numbers resulting from rounding */
 		if(v0_sq < 0.0) v0_sq = 0.0;
 
-		vO = kostNormalv(&(state->pos));
-		vO = kostMulrv(sqrt(v0_sq)*signSinTrueAnomaly, &vO);
+		vO = state->pos.normalized();
+		vO = (sqrt(v0_sq)*signSinTrueAnomaly)*vO;
 	}
 
 	/* add to get velocity vector */
-	state->vel = kostAddvv(&vPro, &vO);
+	state->vel = vPro+vO;
 }
 
 int kostElements2StateVector(
-	kostReal mu,                  /* standard gravitational parameter */
+	btScalar mu,                  /* standard gravitational parameter */
 	const kostElements *elements, /* pointer to orbital elements at epoch */
 	kostStateVector *state,       /* pointer to location where state vector will be stored */
-	kostReal maxRelativeError,    /* maximum relative error in eccentric anomaly */
+	btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
 	int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
 {
 	/*
@@ -430,7 +428,7 @@ int kostElements2StateVector(
 	*/
 
 	/* Returns number of iterations if successful, returns 0 otherwise. */
-	
+
 	/* Pseudocode
 	 *
 	 * get true anomaly
@@ -438,19 +436,19 @@ int kostElements2StateVector(
 	 * calc state vectors */
 
 	int ret;
-	kostReal trueAnomaly;
+	btScalar trueAnomaly;
 
 	/* get true anomaly */
 	ret = kostGetTrueAnomaly(mu, elements, &trueAnomaly, maxRelativeError, maxIterations);
 
 	/* calc state vectors */
-	kostElements2StateVector2(mu, elements, state, trueAnomaly);	
+	kostElements2StateVector2(mu, elements, state, trueAnomaly);
 
 	return ret;
 }
 
 void kostStateVector2Elements(
-	kostReal mu,
+	btScalar mu,
 	const kostStateVector *state,
 	kostElements *elements,
 	kostOrbitParam *params)
@@ -459,10 +457,10 @@ void kostStateVector2Elements(
 	See appendix C in orbiter.pdf
 	*/
 
-	kostVector3 vel, h, n, e;
-	kostReal absh, absn, absr, abse, E, tPe;
-	int isEquatorial, isCircular, isHyperbola;
-	int sin_TrA_isNegative = 0;
+	btVector3 vel, h, n, e;
+	btScalar absh, absn, absr, abse, E, tPe;
+	bool isEquatorial, isCircular, isHyperbola;
+	bool sin_TrA_isNegative = false;
 
 	if(params == NULL)
 	{
@@ -472,10 +470,10 @@ void kostStateVector2Elements(
 
 	vel = state->vel;
 
-	absr  = kostAbsv(&state->pos);
+	absr  = state->pos.length();
 
-	h = kostCrossProductvv(&state->pos, &vel);
-	absh = kostAbsv(&h);
+	h = state->pos.cross(vel);
+	absh = h.length();
 
 	/*
 	Radial orbits are not supported.
@@ -489,52 +487,50 @@ void kostStateVector2Elements(
 		Otherwise, we are in a singularity anyway,
 		and no formula will get us out of there.
 		*/
-		kostVector3 v_ortho, v_parallel;
-		kostReal v_ortho_size;
+		btVector3 v_ortho, v_parallel;
+		btScalar v_ortho_size;
 
 		/* component of v parallel to pos */
-		v_parallel = kostMulrv(
-			kostDotProductvv(&state->pos, &vel) / kostAbs2v(&state->pos),
-			&state->pos);
+		v_parallel = (state->pos.dot(vel)/state->pos.length2())*state->pos;
 
 		/*
 		Calculate how large the orthogonal component
 		should be to make e significantly different
 		from 1.0:
-		
+
 		|v_ortho| = sqrt(epsilon*mu / |r|)
 		*/
 		v_ortho_size = sqrt(KOST_VERYSMALL * mu / absr);
 
 		/* New orthogonal component */
-		v_ortho = kostConstructv(0.0, 0.0, 1.0);
-		v_ortho = kostCrossProductvv(&state->pos, &v_ortho);
-		v_ortho = kostMulrv(v_ortho_size / kostAbsv(&v_ortho), &v_ortho);
+		v_ortho = btVector3(0.0, 1.0, 0.0);
+		v_ortho = state->pos.cross(v_ortho);
+		v_ortho = (v_ortho_size / v_ortho.length())*v_ortho;
 
 		/* replace the old orthogonal part */
-		vel = kostAddvv(&v_parallel, &v_ortho);
+		vel = v_parallel + v_ortho;
 
-		h = kostCrossProductvv(&state->pos, &vel);
-		absh = kostAbsv(&h);
+		h = state->pos.cross(vel);
+		absh = h.length();
 	}
 
-	n = kostConstructv(-h.y, h.x, 0.0);
-	absn = kostAbsv(&n);
+	n = btVector3(-h.getZ(), h.getX(), 0.0);
+	absn = n.length();
 
-	E = 0.5*kostAbs2v(&vel) - mu / absr;
-	if (E == 0.0) 
+	E = 0.5*vel.length2() - mu/absr;
+	if (E == 0.0)
 		E = KOST_VERYSMALL;
 
 	/*
 	Alternative formula for e:
 	e = (v x h) / mu - r / |r|
 	*/
-	e = kostCrossProductvv(&vel, &h);
-	e = kostMulrv((absr/mu), &e);
-	e = kostSubvv(&e, &state->pos);
-	e = kostMulrv((1.0/absr), &e);
+	e = vel.cross(h);
+	e = (absr/mu)*e;
+	e = e - state->pos;
+	e = (1.0/absr)*e;
 
-	abse = kostAbsv(&e);
+	abse = e.length();
 
 	/* parabolic orbit are not supported */
 	if(abse > 1.0-KOST_VERYSMALL && abse < 1.0+KOST_VERYSMALL)
@@ -575,11 +571,11 @@ void kostStateVector2Elements(
 		which is the angle between r and the
 		equatorial plane.
 		*/
-		elements->i = asin(state->pos.z / absr);
+		elements->i = std::asin(state->pos.getY() / absr);
 	}
 	else
 	{
-		elements->i = acos(h.z / absh);
+		elements->i = std::acos(h.getY() / absh);
 	}
 
 	/*LAN*/
@@ -589,8 +585,8 @@ void kostStateVector2Elements(
 	}
 	else
 	{
-		elements->theta = acos(n.x / absn);
-		if(n.y < 0.0) elements->theta = M_TWOPI - elements->theta;
+		elements->theta = std::acos(n.getX() / absn);
+		if(n.getZ() < 0.0) elements->theta = M_TWOPI - elements->theta;
 	}
 
 	/*AgP*/
@@ -601,41 +597,41 @@ void kostStateVector2Elements(
 	}
 	else if(isEquatorial)
 	{
-		params->AgP = atan2(e.y,e.x);
-		if(h.z < 0.0) params->AgP = -params->AgP;
+		params->AgP = atan2(e.getZ(),e.getX());
+		if(h.getY() < 0.0) params->AgP = -params->AgP;
 	}
 	else
 	{
-		params->AgP = acos(kostDotProductvv(&n, &e) / (absn*abse));
-		if(e.z < 0.0) params->AgP = M_TWOPI - params->AgP;
+		params->AgP = std::acos(n.dot(e))/(absn*abse));
+		if(e.getY() < 0.0) params->AgP = M_TWOPI - params->AgP;
 	}
 
 	/*TrA*/
-	sin_TrA_isNegative = 0;
+	sin_TrA_isNegative = false;
 	if(isCircular)
 	{
 		if(isEquatorial)
 		{
-			params->TrA = acos(state->pos.x / absr);
-			if(vel.x > 0.0)
+			params->TrA = std::acos(state->pos.getX() / absr);
+			if(vel.getX() > 0.0)
 			{
-				sin_TrA_isNegative = 1;
+				sin_TrA_isNegative = true;
 				params->TrA = M_TWOPI - params->TrA;
 			}
 		}
 		else
 		{
-			params->TrA = acos(kostDotProductvv(&n, &state->pos) / (absn*absr));
-			if(kostDotProductvv(&n, &vel) > 0.0)
+			params->TrA = std::acos(n.dot(state->pos)) / (absn*absr));
+			if(n.dot(vel) > 0.0)
 			{
-				sin_TrA_isNegative = 1;
+				sin_TrA_isNegative = true;
 				params->TrA = M_TWOPI - params->TrA;
 			}
 		}
 	}
 	else
 	{
-		kostReal tmp = kostDotProductvv(&e, &state->pos) / (abse*absr);
+		btScalar tmp = e.dot(state->pos) / (abse*absr);
 
 		/*Avoid acos out of range:*/
 		if(tmp <= -1.0)
@@ -645,9 +641,9 @@ void kostStateVector2Elements(
 		else
 			{params->TrA = acos(tmp);}
 
-		if(kostDotProductvv(&state->pos, &vel) < 0.0)
+		if(state->pos.dot(vel) < 0.0)
 		{
-			sin_TrA_isNegative = 1;
+			sin_TrA_isNegative = true;
 			params->TrA = M_TWOPI - params->TrA;
 		}
 	}
@@ -662,27 +658,27 @@ void kostStateVector2Elements(
 	if(isHyperbola)
 	{
 		params->SMi =
-			sqrt(elements->a*elements->a* (elements->e*elements->e - 1.0));
+			std::sqrt(elements->a*elements->a* (elements->e*elements->e - 1.0));
 	}
 	else
 	{
 		params->SMi =
-			sqrt(elements->a*elements->a* (1.0 - elements->e*elements->e));
+			std::sqrt(elements->a*elements->a* (1.0 - elements->e*elements->e));
 	}
 
 	/*LPe*/
-	elements->omegab = fmod(elements->theta + params->AgP, M_TWOPI);
+	elements->omegab = std::fmod(elements->theta + params->AgP, M_TWOPI);
 
 	/*EcA*/
 	if(isHyperbola)
 	{
-		kostReal tmp = (1.0 - absr/elements->a) / elements->e;
+		btScalar tmp = (1.0 - absr/elements->a) / elements->e;
 
 		/*Avoid acosh out of range:*/
 		if(tmp <= 1.0)
 			{params->EcA = 0.0;}
 		else
-			{params->EcA = acosh(tmp);}
+			{params->EcA = std::acosh(tmp);}
 	}
 	else if(isCircular)
 	{
@@ -690,7 +686,7 @@ void kostStateVector2Elements(
 	}
 	else
 	{
-		kostReal tmp = (1.0 - absr/elements->a) / elements->e;
+		btScalar tmp = (1.0 - absr/elements->a) / elements->e;
 
 		/*Avoid acos out of range:*/
 		if(tmp <= -1.0)
@@ -698,7 +694,7 @@ void kostStateVector2Elements(
 		else if(tmp >= 1.0)
 			{params->EcA = 0.0;}
 		else
-			{params->EcA = acos(tmp);}
+			{params->EcA = std::acos(tmp);}
 	}
 
 	if(isHyperbola)
@@ -717,28 +713,28 @@ void kostStateVector2Elements(
 	/*MnA*/
 	if(isHyperbola)
 	{
-		params->MnA = elements->e * sinh(params->EcA) - params->EcA;
+		params->MnA = elements->e * std::sinh(params->EcA) - params->EcA;
 	}
 	else
 	{
-		params->MnA = params->EcA - elements->e * sin(params->EcA);
+		params->MnA = params->EcA - elements->e * std::sin(params->EcA);
 	}
 
 	/*MnL*/
 	elements->L = params->MnA + elements->omegab;
 	if(!isHyperbola)
-		elements->L = fmod(elements->L, M_TWOPI);
+		elements->L = std::fmod(elements->L, M_TWOPI);
 
 	/*TrL*/
-	params->TrL = fmod(elements->omegab + params->TrA, M_TWOPI);
+	params->TrL = std::fmod(elements->omegab + params->TrA, M_TWOPI);
 
 	/*
 	T = 2*pi*sqrt(a^3 / mu)
 
 	fabs is for supporting hyperbola
 	*/
-	params->T = 
-		M_TWOPI * sqrt(fabs(elements->a*elements->a*elements->a/mu));
+	params->T =
+		M_TWOPI * std::sqrt(fabs(elements->a*elements->a*elements->a/mu));
 
 	/*
 	Calculating PeT and ApT:
