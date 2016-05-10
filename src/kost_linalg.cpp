@@ -18,77 +18,9 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include <math.h>
+#include <cmath>
 
 #include "kost_linalg.h"
-
-btVector3 kostConstructv(btScalar x, btScalar y, btScalar z)
-{
-	btVector3 ret;
-	ret.x = x;
-	ret.y = y;
-	ret.z = z;
-	return ret;
-}
-
-btVector3 kostAddvv(const btVector3 *v1, const btVector3 *v2)
-{
-	btVector3 ret;
-	ret.x = v1->x + v2->x;
-	ret.y = v1->y + v2->y;
-	ret.z = v1->z + v2->z;
-	return ret;
-}
-
-btVector3 kostSubvv(const btVector3 *v1, const btVector3 *v2)
-{
-	btVector3 ret;
-	ret.x = v1->x - v2->x;
-	ret.y = v1->y - v2->y;
-	ret.z = v1->z - v2->z;
-	return ret;
-}
-
-btVector3 kostMulrv(btScalar r, const btVector3 *v)
-{
-	btVector3 ret;
-	ret.x = r * v->x;
-	ret.y = r * v->y;
-	ret.z = r * v->z;
-	return ret;
-}
-
-btScalar kostDotProductvv(const btVector3 *v1, const btVector3 *v2)
-{
-	return v1->x*v2->x + v1->y*v2->y + v1->z*v2->z;
-}
-
-btVector3 kostCrossProductvv(const btVector3 *v1, const btVector3 *v2)
-{
-	btVector3 ret;
-	ret.x = v1->y*v2->z - v1->z*v2->y;
-	ret.y = v1->z*v2->x - v1->x*v2->z;
-	ret.z = v1->x*v2->y - v1->y*v2->x;
-	return ret;
-}
-
-btScalar kostAbsv(const btVector3 *v)
-{
-	return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
-}
-
-btScalar kostAbs2v(const btVector3 *v)
-{
-	return v->x*v->x + v->y*v->y + v->z*v->z;
-}
-
-btVector3 kostNormalv(const btVector3 *v)
-{
-	btScalar len = kostAbsv(v);
-	/*TODO: check against division by zero*/
-	btScalar invlen = 1.0 / len;
-	return kostConstructv(invlen * v->x, invlen * v->y, invlen * v->z);
-}
 
 void kostMakeUnitm(kostMatrix3 *m)
 {
@@ -132,9 +64,9 @@ void kostMakeTransposem(kostMatrix3 *m)
 btVector3 kostMulmv(const kostMatrix3 *m, const btVector3 *v)
 {
 	btVector3 ret;
-	ret.x = m->m11 * v->x + m->m12 * v->y + m->m13 * v->z;
-	ret.y = m->m21 * v->x + m->m22 * v->y + m->m23 * v->z;
-	ret.z = m->m31 * v->x + m->m32 * v->y + m->m33 * v->z;
+	ret.setX(m->m11 * v->getY() + m->m12 * v->getY() + m->m13 * v->getZ());
+	ret.setY(m->m21 * v->getX() + m->m22 * v->getY() + m->m23 * v->getZ());
+	ret.setZ(m->m31 * v->getX() + m->m32 * v->getY() + m->m33 * v->getZ());
 	return ret;
 }
 

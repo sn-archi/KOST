@@ -32,24 +32,6 @@ This header file contains the linear algebra functions
 extern "C" {
 #endif
 
-/*
-Vector operations:
-*/
-btVector3 kostConstructv(btScalar x, btScalar y, btScalar z);
-
-btVector3 kostAddvv(const btVector3 *v1, const btVector3 *v2);
-btVector3 kostSubvv(const btVector3 *v1, const btVector3 *v2);
-
-btVector3 kostMulrv(btScalar r, const btVector3 *v);
-
-btScalar    kostDotProductvv(const btVector3 *v1, const btVector3 *v2);
-btVector3 kostCrossProductvv(const btVector3 *v1, const btVector3 *v2);
-
-btScalar    kostAbsv(const btVector3 *v);  /*Absolute value (length)*/
-btScalar    kostAbs2v(const btVector3 *v); /*Square of absolute value (faster)*/
-
-btVector3 kostNormalv(const btVector3 *v); /*Normalized vector*/
-
 /*TODO: other ones*/
 
 /*

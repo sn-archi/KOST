@@ -79,11 +79,10 @@ Renamed several functions
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
 #include "kost_linalg.h"
 #include "kost_constants.h"
-#include "kost_math.h"
 #include "kost_elements.h"
 
 #include "kost_propagate.h"
@@ -102,14 +101,14 @@ btScalar kostGetMeanAnomalyAtTime(
 	btScalar meanMotion, deltaMeanAnomaly, meanAnomaly;
 
 	/* calc mean motion */
-	meanMotion = sqrt(mu/pow(fabs(elements->a),3.0));
+	meanMotion = std::sqrt(mu/std::pow(std::fabs(elements->a),3.0));
 
 	/* calc change in mean anomaly */
 	deltaMeanAnomaly = timeSinceEpoch * meanMotion;
 
 	/* calc mean anomaly */
 	/* fmod takes care of overflow in the case where the mean anomaly exceeds one revolution */
-	meanAnomaly = fmod(elements->L - elements->omegab + deltaMeanAnomaly, M_TWOPI);
+	meanAnomaly = std::fmod(elements->L - elements->omegab + deltaMeanAnomaly, M_TWOPI);
 
 	if (meanAnomaly<0) meanAnomaly += M_TWOPI;
 
@@ -158,7 +157,7 @@ btScalar kostGetLANAtTime(
 
 	if (elements->e < 1.0) /* elliptical orbit */
 	{
-		meanMotion = sqrt(mu/pow(elements->a,3.0));
+		meanMotion = std::sqrt(mu/pow(elements->a,3.0));
 		return ( elements->theta + timeSinceEpoch * (-3.0 * meanMotion/2.0) * pow(bodyRadius/elements->a,2.0) * (cos(elements->i)/pow(1.0-pow(elements->e,2.0),2.0)) * jTwoCoeff );
 	}
 	else /* hyperbolic orbit - non spherical effect is negligible */
@@ -176,8 +175,8 @@ btScalar kostGetArgPeAtTime(
 
 	if (elements->e < 1.0) /* elliptical orbit */
 	{
-		meanMotion = sqrt(mu/pow(elements->a,3.0));
-		return ( elements->omegab - elements->theta + timeSinceEpoch * (3.0 * meanMotion/4.0) * pow(bodyRadius/elements->a,2.0) * ( (5.0 * pow(cos(elements->i),2.0) - 1.0)/pow(1.0-pow(elements->e,2.0),2.0) ) * jTwoCoeff );
+		meanMotion = std::sqrt(mu/std::pow(elements->a,3.0));
+		return ( elements->omegab - elements->theta + timeSinceEpoch * (3.0 * meanMotion/4.0) * std::pow(bodyRadius/elements->a,2.0) * ( (5.0 * std::pow(std::cos(elements->i),2.0) - 1.0)/std::pow(1.0-std::pow(elements->e,2.0),2.0) ) * jTwoCoeff );
 	}
 	else /* hyperbolic orbit - non spherical effect is negligible */
 		return ( elements->omegab - elements->theta );

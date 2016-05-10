@@ -131,11 +131,10 @@ Added implementation of:
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
 #include "kost_linalg.h"
 #include "kost_constants.h"
-#include "kost_math.h"
 
 #include "kost_elements.h"
 

@@ -30,45 +30,6 @@ This header file defines a C++ API
 
 #include "kost_settings.h"
 
-
-#ifdef KOSTMM_LINALG_OPERATORS_VECTOR3
-
-inline btVector3 operator+(const btVector3 &v1, const btVector3 &v2)
-	{return kostAddvv(&v1, &v2);}
-
-inline btVector3 operator-(const btVector3 &v1, const btVector3 &v2)
-	{return kostSubvv(&v1, &v2);}
-
-inline btVector3 operator*(const btVector3 &v, btScalar r)
-	{return kostMulrv(r, &v);}
-
-#endif
-
-#ifndef dotProduct
-inline btScalar dotProduct(const btVector3 &v1, const btVector3 &v2)
-	{return kostDotProductvv(&v1, &v2);}
-#endif
-
-#ifndef crossProduct
-inline btVector3 crossProduct(const btVector3 &v1, const btVector3 &v2)
-	{return kostCrossProductvv(&v1, &v2);}
-#endif
-
-#ifndef abs
-inline btScalar abs(const btVector3 &v)
-	{return kostAbsv(&v);}
-#endif
-
-#ifndef abs2
-inline btScalar abs2(const btVector3 &v)
-	{return kostAbs2v(&v);}
-#endif
-
-#ifndef normal
-inline btVector3 normal(const btVector3 &v)
-	{return kostNormalv(&v);}
-#endif
-
 #ifdef KOSTMM_LINALG_OPERATORS_MATRIX3
 
 inline kostMatrix3 operator*(const kostMatrix3 &m1, const kostMatrix3 &m2)

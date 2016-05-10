@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
-#include "kost.h"
+#include "../../src/kost.h"
 
 /*Data about central body (earth)*/
 #define R 6378100.0
@@ -36,14 +36,14 @@ void testState(const kostStateVector *sv)
 			"     pos = %e, %e, %e\n"
 			"     vel = %e, %e, %e\n"
 			"     error = %e\n",
-			sv_maxRerror.pos.x, sv_maxRerror.pos.y, sv_maxRerror.pos.z,
-			sv_maxRerror.vel.x, sv_maxRerror.vel.y, sv_maxRerror.vel.z,
+			sv_maxRerror.pos.getX(), sv_maxRerror.pos.getY(), sv_maxRerror.pos.getZ(),
+			sv_maxRerror.vel.getX(), sv_maxRerror.vel.getY(), sv_maxRerror.vel.getZ(),
 			maxRerror
 		);
 	}
 
-	diff = kostSubvv(&(sv->vel), &(out.vel));
-	error = kostAbsv(&diff) / kostAbsv(&(sv->vel));
+	diff = sv->vel - out.vel;
+	error = diff.length() / sv->vel.length();
 	if(error > maxVerror)
 	{
 		maxVerror = error;
@@ -53,8 +53,8 @@ void testState(const kostStateVector *sv)
 			"     pos = %e, %e, %e\n"
 			"     vel = %e, %e, %e\n"
 			"     error = %e\n",
-			sv_maxVerror.pos.x, sv_maxVerror.pos.y, sv_maxVerror.pos.z,
-			sv_maxVerror.vel.x, sv_maxVerror.vel.y, sv_maxVerror.vel.z,
+			sv_maxVerror.pos.getX(), sv_maxVerror.pos.getY(), sv_maxVerror.pos.getZ(),
+			sv_maxVerror.vel.getX(), sv_maxVerror.vel.getY(), sv_maxVerror.vel.getZ(),
 			maxVerror
 		);
 	}
@@ -74,12 +74,12 @@ int main(int argc, char *argv[])
 	for(vy=vmin; vy <= vmax; vy++)
 	for(vz=vmin; vz <= vmax; vz++)
 	{
-		double rxf = pow(10.0, rx);
-		double ryf = pow(10.0, ry);
-		double rzf = pow(10.0, rz);
-		double vxf = pow(10.0, vx);
-		double vyf = pow(10.0, vy);
-		double vzf = pow(10.0, vz);
+		double rxf = std::pow(10.0, rx);
+		double ryf = std::pow(10.0, ry);
+		double rzf = std::pow(10.0, rz);
+		double vxf = std::pow(10.0, vx);
+		double vyf = std::pow(10.0, vy);
+		double vzf = std::pow(10.0, vz);
 
 		int srx, sry, srz, svx, svy, svz;
 		for(srx=-1; srx<=1; srx++)
@@ -94,8 +94,8 @@ int main(int argc, char *argv[])
 			if(svx == svy == svz == 0)
 				continue;
 
-			sv.pos = kostConstructv(srx*rxf, sry*ryf, srz*rzf);
-			sv.vel = kostConstructv(svx*vxf, svy*vyf, svz*vzf);
+			sv.pos = btVector3(srx*rxf, sry*ryf, srz*rzf);
+			sv.vel = btVector3(svx*vxf, svy*vyf, svz*vzf);
 			testState(&sv);
 		}
 	}

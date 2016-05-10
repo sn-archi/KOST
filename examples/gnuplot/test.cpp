@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
-#include "kost.h"
+#include "../../src/kost.h"
 
 /*Number of output samples*/
 #define N 100
@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 	printf("mu = %e\n", mu);
 
 	/*Initial state at t=0*/
-	initial.pos = kostConstructv(R + 200000.0, 0.0, 0.0);
-	initial.vel = kostConstructv(0.0, 10000.0, 0.0);
+	initial.pos = btVector3(R + 200000.0, 0.0, 0.0);
+	initial.vel = btVector3(0.0, 10000.0, 0.0);
 
 	/*Convert to orbital elements*/
 	kostStateVector2Elements(mu, &initial, &elements, &params);
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 		FILE *fp = fopen("orbit.dat", "w");
 
 		for(i=0; i < N; i++)
-			fprintf(fp, "%f\t%f\t%f\n", output[i].x, output[i].y, output[i].z);
+			fprintf(fp, "%f\t%f\t%f\n", output[i].getX(), output[i].getY(), output[i].getZ());
 
 		fclose(fp);
 	}

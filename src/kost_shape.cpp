@@ -18,7 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include <math.h>
+#include <cmath>
 
 #include "kost_constants.h"
 #include "kost_linalg.h"
@@ -38,8 +38,8 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 	*/
 
 	/*Pe, Ap*/
-	shape->pe = kostConstructv( elements->a * (1.0 - elements->e), 0.0, 0.0);
-	shape->ap = kostConstructv(-elements->a * (1.0 + elements->e), 0.0, 0.0);
+	shape->pe = btVector3( elements->a * (1.0 - elements->e), 0.0, 0.0);
+	shape->ap = btVector3(-elements->a * (1.0 + elements->e), 0.0, 0.0);
 
 	/*Points*/
 	if(shape->numPoints == 1)
@@ -54,7 +54,7 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 		maxTrA = M_PI;
 		if(elements->e >= 1.0)
 		{
-			maxTrA = acos(-1.0 / elements->e);
+			maxTrA = std::acos(-1.0 / elements->e);
 
 			/*Make it a bit smaller to avoid division by zero:*/
 			maxTrA *= (((btScalar)shape->numPoints) / (shape->numPoints + 1));
@@ -66,10 +66,10 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 		TrA = -maxTrA;
 		for(i=0; i < shape->numPoints; i++)
 		{
-			btScalar absr = fabs(multiplier / (1.0 + elements->e*cos(TrA)));
+			btScalar absr = std::fabs(multiplier / (1.0 + elements->e*std::cos(TrA)));
 
-			btVector3 direction = kostConstructv(cos(TrA), sin(TrA), 0.0);
-			shape->points[i] = kostMulrv(absr, &direction);
+			btVector3 direction = btVector3(std::cos(TrA), std::sin(TrA), 0.0);
+			shape->points[i] = absr * direction;
 
 			TrA += dTrA;
 		}
@@ -79,32 +79,32 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 	/*AN*/
 	{
 		btScalar TrA = -AgP;
-		btScalar absr = multiplier / (1.0 + elements->e*cos(TrA));
+		btScalar absr = multiplier / (1.0 + elements->e*std::cos(TrA));
 
 		if(absr <= 0.0)
 		{
-			shape->an = kostConstructv(0.0, 0.0, 0.0);
+			shape->an = btVector3(0.0, 0.0, 0.0);
 		}
 		else
 		{
-			btVector3 direction = kostConstructv(cos(TrA), sin(TrA), 0.0);
-			shape->an = kostMulrv(absr, &direction);
+			btVector3 direction = btVector3(std::cos(TrA), std::sin(TrA), 0.0);
+			shape->an = absr * direction;
 		}
 	}
 
 	/*DN*/
 	{
 		btScalar TrA = M_PI - AgP;
-		btScalar absr = multiplier / (1.0 + elements->e*cos(TrA));
+		btScalar absr = multiplier / (1.0 + elements->e*std::cos(TrA));
 
 		if(absr <= 0.0)
 		{
-			shape->dn = kostConstructv(0.0, 0.0, 0.0);
+			shape->dn = btVector3(0.0, 0.0, 0.0);
 		}
 		else
 		{
-			btVector3 direction = kostConstructv(cos(TrA), sin(TrA), 0.0);
-			shape->dn = kostMulrv(absr, &direction);
+			btVector3 direction = btVector3(std::cos(TrA), std::sin(TrA), 0.0);
+			shape->dn = absr * direction;
 		}
 	}
 
