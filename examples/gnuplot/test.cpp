@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 	kostOrbitParam params;
 	double maxt;
 
-	kostVector3 output[N];
+	btVector3 output[N];
 	unsigned int i = 0;
 
 	printf("mu = %e\n", mu);

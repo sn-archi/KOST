@@ -35,20 +35,20 @@ extern "C" {
 /*
 Vector operations:
 */
-kostVector3 kostConstructv(kostReal x, kostReal y, kostReal z);
+btVector3 kostConstructv(btScalar x, btScalar y, btScalar z);
 
-kostVector3 kostAddvv(const kostVector3 *v1, const kostVector3 *v2);
-kostVector3 kostSubvv(const kostVector3 *v1, const kostVector3 *v2);
+btVector3 kostAddvv(const btVector3 *v1, const btVector3 *v2);
+btVector3 kostSubvv(const btVector3 *v1, const btVector3 *v2);
 
-kostVector3 kostMulrv(kostReal r, const kostVector3 *v);
+btVector3 kostMulrv(btScalar r, const btVector3 *v);
 
-kostReal    kostDotProductvv(const kostVector3 *v1, const kostVector3 *v2);
-kostVector3 kostCrossProductvv(const kostVector3 *v1, const kostVector3 *v2);
+btScalar    kostDotProductvv(const btVector3 *v1, const btVector3 *v2);
+btVector3 kostCrossProductvv(const btVector3 *v1, const btVector3 *v2);
 
-kostReal    kostAbsv(const kostVector3 *v);  /*Absolute value (length)*/
-kostReal    kostAbs2v(const kostVector3 *v); /*Square of absolute value (faster)*/
+btScalar    kostAbsv(const btVector3 *v);  /*Absolute value (length)*/
+btScalar    kostAbs2v(const btVector3 *v); /*Square of absolute value (faster)*/
 
-kostVector3 kostNormalv(const kostVector3 *v); /*Normalized vector*/
+btVector3 kostNormalv(const btVector3 *v); /*Normalized vector*/
 
 /*TODO: other ones*/
 
@@ -57,13 +57,13 @@ Matrix operations:
 */
 
 void kostMakeUnitm(kostMatrix3 *m);
-void kostMakeXRotm(kostMatrix3 *m, kostReal angle);
-void kostMakeYRotm(kostMatrix3 *m, kostReal angle);
-void kostMakeZRotm(kostMatrix3 *m, kostReal angle);
+void kostMakeXRotm(kostMatrix3 *m, btScalar angle);
+void kostMakeYRotm(kostMatrix3 *m, btScalar angle);
+void kostMakeZRotm(kostMatrix3 *m, btScalar angle);
 
 void kostMakeTransposem(kostMatrix3 *m);
 
-kostVector3 kostMulmv(const kostMatrix3 *m, const kostVector3 *v);
+btVector3 kostMulmv(const kostMatrix3 *m, const btVector3 *v);
 
 kostMatrix3 kostMulmm(const kostMatrix3 *m1, const kostMatrix3 *m2);
 

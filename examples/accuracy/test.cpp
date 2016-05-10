@@ -10,14 +10,14 @@
 #define mu (KOST_GRAVITATIONAL_CONSTANT * M)
 
 kostStateVector sv_maxVerror, sv_maxRerror;
-kostReal maxVerror= -1.0, maxRerror = -1.0;
+btScalar maxVerror= -1.0, maxRerror = -1.0;
 
 void testState(const kostStateVector *sv)
 {
 	kostElements elements;
 	kostStateVector out;
-	kostVector3 diff;
-	kostReal error;
+	btVector3 diff;
+	btScalar error;
 
 	/*Convert to orbital elements*/
 	kostStateVector2Elements(mu, sv, &elements, NULL);
@@ -25,8 +25,8 @@ void testState(const kostStateVector *sv)
 	/*Convert back to state vector*/
 	kostElements2StateVector(mu, &elements, &out, KOST_VERYSMALL, 1000000);
 
-	diff = kostSubvv(&(sv->pos), &(out.pos));
-	error = kostAbsv(&diff) / kostAbsv(&(sv->pos));
+	diff = sv->pos - out.pos;
+	error = diff.length() / sv->pos.length();
 	if(error > maxRerror)
 	{
 		maxRerror = error;

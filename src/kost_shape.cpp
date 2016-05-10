@@ -30,8 +30,8 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 	unsigned int i = 0;
 
 	/*Some utility values: */
-	kostReal multiplier = elements->a * (1.0 - elements->e*elements->e);
-	kostReal AgP = elements->omegab - elements->theta;
+	btScalar multiplier = elements->a * (1.0 - elements->e*elements->e);
+	btScalar AgP = elements->omegab - elements->theta;
 
 	/*
 	First: Orbit in its own coordinate system:
@@ -48,7 +48,7 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 	}
 	else if(shape->numPoints > 1)
 	{
-		kostReal maxTrA, dTrA, TrA;
+		btScalar maxTrA, dTrA, TrA;
 
 		/*Range of angles*/
 		maxTrA = M_PI;
@@ -57,7 +57,7 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 			maxTrA = acos(-1.0 / elements->e);
 
 			/*Make it a bit smaller to avoid division by zero:*/
-			maxTrA *= (((kostReal)shape->numPoints) / (shape->numPoints + 1));
+			maxTrA *= (((btScalar)shape->numPoints) / (shape->numPoints + 1));
 		}
 
 		/*Angle change per segment*/
@@ -66,9 +66,9 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 		TrA = -maxTrA;
 		for(i=0; i < shape->numPoints; i++)
 		{
-			kostReal absr = fabs(multiplier / (1.0 + elements->e*cos(TrA)));
+			btScalar absr = fabs(multiplier / (1.0 + elements->e*cos(TrA)));
 
-			kostVector3 direction = kostConstructv(cos(TrA), sin(TrA), 0.0);
+			btVector3 direction = kostConstructv(cos(TrA), sin(TrA), 0.0);
 			shape->points[i] = kostMulrv(absr, &direction);
 
 			TrA += dTrA;
@@ -78,8 +78,8 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 
 	/*AN*/
 	{
-		kostReal TrA = -AgP;
-		kostReal absr = multiplier / (1.0 + elements->e*cos(TrA));
+		btScalar TrA = -AgP;
+		btScalar absr = multiplier / (1.0 + elements->e*cos(TrA));
 
 		if(absr <= 0.0)
 		{
@@ -87,15 +87,15 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 		}
 		else
 		{
-			kostVector3 direction = kostConstructv(cos(TrA), sin(TrA), 0.0);
+			btVector3 direction = kostConstructv(cos(TrA), sin(TrA), 0.0);
 			shape->an = kostMulrv(absr, &direction);
 		}
 	}
 
 	/*DN*/
 	{
-		kostReal TrA = M_PI - AgP;
-		kostReal absr = multiplier / (1.0 + elements->e*cos(TrA));
+		btScalar TrA = M_PI - AgP;
+		btScalar absr = multiplier / (1.0 + elements->e*cos(TrA));
 
 		if(absr <= 0.0)
 		{
@@ -103,7 +103,7 @@ void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape)
 		}
 		else
 		{
-			kostVector3 direction = kostConstructv(cos(TrA), sin(TrA), 0.0);
+			btVector3 direction = kostConstructv(cos(TrA), sin(TrA), 0.0);
 			shape->dn = kostMulrv(absr, &direction);
 		}
 	}

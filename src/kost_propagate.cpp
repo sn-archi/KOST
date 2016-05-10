@@ -88,10 +88,10 @@ Renamed several functions
 
 #include "kost_propagate.h"
 
-kostReal kostGetMeanAnomalyAtTime(
-	kostReal mu,                  /* standard gravitational parameter */
+btScalar kostGetMeanAnomalyAtTime(
+	btScalar mu,                  /* standard gravitational parameter */
 	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostReal timeSinceEpoch)      /* time since epoch in seconds */
+	btScalar timeSinceEpoch)      /* time since epoch in seconds */
 {
 	/* Pseudocode
 	 *
@@ -99,7 +99,7 @@ kostReal kostGetMeanAnomalyAtTime(
 	 * calc change in mean anomaly
 	 * calc mean anomaly */
 
-	kostReal meanMotion, deltaMeanAnomaly, meanAnomaly;
+	btScalar meanMotion, deltaMeanAnomaly, meanAnomaly;
 
 	/* calc mean motion */
 	meanMotion = sqrt(mu/pow(fabs(elements->a),3.0));
@@ -117,11 +117,11 @@ kostReal kostGetMeanAnomalyAtTime(
 }
 
 int kostGetTrueAnomalyAtTime(
-	kostReal mu,                  /* standard gravitational parameter */
+	btScalar mu,                  /* standard gravitational parameter */
 	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostReal *trueAnomaly,        /* location where result will be stored */
-	kostReal timeSinceEpoch,      /* time since epoch in seconds */
-	kostReal maxRelativeError,    /* maximum relative error in eccentric anomaly */
+	btScalar *trueAnomaly,        /* location where result will be stored */
+	btScalar timeSinceEpoch,      /* time since epoch in seconds */
+	btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
 	int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
 {
 	/* Returns number of iterations if successful, returns 0 otherwise. */
@@ -133,7 +133,7 @@ int kostGetTrueAnomalyAtTime(
 	 * calc true anomaly */
 
 	int ret;
-	kostReal meanAnomaly, eccentricAnomaly;
+	btScalar meanAnomaly, eccentricAnomaly;
 
 	/* get mean anomaly */
 	meanAnomaly = kostGetMeanAnomalyAtTime(mu,elements,timeSinceEpoch);
@@ -147,14 +147,14 @@ int kostGetTrueAnomalyAtTime(
 	return ret;
 }
 
-kostReal kostGetLANAtTime(
-	kostReal mu,                  /* standard gravitational parameter */
+btScalar kostGetLANAtTime(
+	btScalar mu,                  /* standard gravitational parameter */
 	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostReal bodyRadius,          /* mean radius of the non-spherical body being orbited */
-	kostReal jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
-	kostReal timeSinceEpoch)      /* time since epoch in seconds */
+	btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
+	btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
+	btScalar timeSinceEpoch)      /* time since epoch in seconds */
 {
-	kostReal meanMotion;
+	btScalar meanMotion;
 
 	if (elements->e < 1.0) /* elliptical orbit */
 	{
@@ -165,14 +165,14 @@ kostReal kostGetLANAtTime(
 		return elements->theta;
 }
 
-kostReal kostGetArgPeAtTime(
-	kostReal mu,                  /* standard gravitational parameter */
+btScalar kostGetArgPeAtTime(
+	btScalar mu,                  /* standard gravitational parameter */
 	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostReal bodyRadius,          /* mean radius of the non-spherical body being orbited */
-	kostReal jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
-	kostReal timeSinceEpoch)      /* time since epoch in seconds */
+	btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
+	btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
+	btScalar timeSinceEpoch)      /* time since epoch in seconds */
 {
-	kostReal meanMotion;
+	btScalar meanMotion;
 
 	if (elements->e < 1.0) /* elliptical orbit */
 	{
@@ -184,17 +184,17 @@ kostReal kostGetArgPeAtTime(
 }
 
 int kostElements2StateVectorAtTime(
-	kostReal mu,                  /* standard gravitational parameter */
+	btScalar mu,                  /* standard gravitational parameter */
 	const kostElements *elements, /* pointer to orbital elements at epoch */
 	kostStateVector *state,       /* pointer to location where state vectors at epoch+timeSinceEpoch will be stored */
-	kostReal timeSinceEpoch,      /* time since epoch in seconds */
-	kostReal maxRelativeError,    /* maximum relative error in eccentric anomaly */
+	btScalar timeSinceEpoch,      /* time since epoch in seconds */
+	btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
 	int maxIterations,            /* max number of iterations for calculating eccentric anomaly */
-	kostReal bodyRadius,          /* mean radius of the non-spherical body being orbited */
-	kostReal jTwoCoeff)           /* J2 coefficient of the non-spherical body being orbited */
+	btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
+	btScalar jTwoCoeff)           /* J2 coefficient of the non-spherical body being orbited */
 {
 	/* Returns number of iterations if successful, returns 0 otherwise. */
-	
+
 	/* Pseudocode
 	 *
 	 * get true anomaly
@@ -202,7 +202,7 @@ int kostElements2StateVectorAtTime(
 	 * calc state vectors */
 
 	int ret;
-	kostReal trueAnomaly;
+	btScalar trueAnomaly;
 	kostElements updatedElements;
 
 	/* get true anomaly */
@@ -212,18 +212,18 @@ int kostElements2StateVectorAtTime(
 	kostGetElementsAtTime(mu,elements,&updatedElements,timeSinceEpoch,bodyRadius,jTwoCoeff);
 
 	/* calc state vectors */
-	kostElements2StateVector2(mu,&updatedElements,state,trueAnomaly);	
+	kostElements2StateVector2(mu,&updatedElements,state,trueAnomaly);
 
 	return ret;
 }
 
 void kostGetElementsAtTime(
-	kostReal mu,                     /* standard gravitational parameter */
+	btScalar mu,                     /* standard gravitational parameter */
 	const kostElements *elements,    /* pointer to orbital elements at epoch */
 	kostElements *newElements,       /* pointer to location where elements at epoch+timeSinceEpoch will be stored */
-	kostReal timeSinceEpoch,         /* time since epoch in seconds */
-	kostReal bodyRadius,             /* mean radius of the non-spherical body being orbited */
-	kostReal jTwoCoeff)              /* J2 coefficient of the non-spherical body being orbited */
+	btScalar timeSinceEpoch,         /* time since epoch in seconds */
+	btScalar bodyRadius,             /* mean radius of the non-spherical body being orbited */
+	btScalar jTwoCoeff)              /* J2 coefficient of the non-spherical body being orbited */
 {
 	*newElements = *elements;
 
@@ -238,7 +238,7 @@ void kostGetElementsAtTime(
 
 		/* argument of periapsis */
 		newElements->omegab =
-			newElements->theta + 
+			newElements->theta +
 			kostGetArgPeAtTime(mu,newElements,bodyRadius,jTwoCoeff,timeSinceEpoch);
 	}
 }

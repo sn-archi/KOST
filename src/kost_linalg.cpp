@@ -22,71 +22,71 @@
 
 #include "kost_linalg.h"
 
-kostVector3 kostConstructv(kostReal x, kostReal y, kostReal z)
+btVector3 kostConstructv(btScalar x, btScalar y, btScalar z)
 {
-	kostVector3 ret;
+	btVector3 ret;
 	ret.x = x;
 	ret.y = y;
 	ret.z = z;
 	return ret;
 }
 
-kostVector3 kostAddvv(const kostVector3 *v1, const kostVector3 *v2)
+btVector3 kostAddvv(const btVector3 *v1, const btVector3 *v2)
 {
-	kostVector3 ret;
+	btVector3 ret;
 	ret.x = v1->x + v2->x;
 	ret.y = v1->y + v2->y;
 	ret.z = v1->z + v2->z;
 	return ret;
 }
 
-kostVector3 kostSubvv(const kostVector3 *v1, const kostVector3 *v2)
+btVector3 kostSubvv(const btVector3 *v1, const btVector3 *v2)
 {
-	kostVector3 ret;
+	btVector3 ret;
 	ret.x = v1->x - v2->x;
 	ret.y = v1->y - v2->y;
 	ret.z = v1->z - v2->z;
 	return ret;
 }
 
-kostVector3 kostMulrv(kostReal r, const kostVector3 *v)
+btVector3 kostMulrv(btScalar r, const btVector3 *v)
 {
-	kostVector3 ret;
+	btVector3 ret;
 	ret.x = r * v->x;
 	ret.y = r * v->y;
 	ret.z = r * v->z;
 	return ret;
 }
 
-kostReal kostDotProductvv(const kostVector3 *v1, const kostVector3 *v2)
+btScalar kostDotProductvv(const btVector3 *v1, const btVector3 *v2)
 {
 	return v1->x*v2->x + v1->y*v2->y + v1->z*v2->z;
 }
 
-kostVector3 kostCrossProductvv(const kostVector3 *v1, const kostVector3 *v2)
+btVector3 kostCrossProductvv(const btVector3 *v1, const btVector3 *v2)
 {
-	kostVector3 ret;
+	btVector3 ret;
 	ret.x = v1->y*v2->z - v1->z*v2->y;
 	ret.y = v1->z*v2->x - v1->x*v2->z;
 	ret.z = v1->x*v2->y - v1->y*v2->x;
 	return ret;
 }
 
-kostReal kostAbsv(const kostVector3 *v)
+btScalar kostAbsv(const btVector3 *v)
 {
 	return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
 }
 
-kostReal kostAbs2v(const kostVector3 *v)
+btScalar kostAbs2v(const btVector3 *v)
 {
 	return v->x*v->x + v->y*v->y + v->z*v->z;
 }
 
-kostVector3 kostNormalv(const kostVector3 *v)
+btVector3 kostNormalv(const btVector3 *v)
 {
-	kostReal len = kostAbsv(v);
+	btScalar len = kostAbsv(v);
 	/*TODO: check against division by zero*/
-	kostReal invlen = 1.0 / len;
+	btScalar invlen = 1.0 / len;
 	return kostConstructv(invlen * v->x, invlen * v->y, invlen * v->z);
 }
 
@@ -97,21 +97,21 @@ void kostMakeUnitm(kostMatrix3 *m)
 	m->m31 = 0.0; m->m32 = 0.0; m->m33 = 1.0;
 }
 
-void kostMakeXRotm(kostMatrix3 *m, kostReal angle)
+void kostMakeXRotm(kostMatrix3 *m, btScalar angle)
 {
 	m->m11 = 1.0; m->m12 = 0.0;        m->m13 =  0.0;
 	m->m21 = 0.0; m->m22 = cos(angle); m->m23 = -sin(angle);
 	m->m31 = 0.0; m->m32 = sin(angle); m->m33 =  cos(angle);
 }
 
-void kostMakeYRotm(kostMatrix3 *m, kostReal angle)
+void kostMakeYRotm(kostMatrix3 *m, btScalar angle)
 {
 	m->m11 =  cos(angle); m->m12 = 0.0; m->m13 = sin(angle);
 	m->m21 =  0.0;        m->m22 = 1.0; m->m23 = 0.0;
 	m->m31 = -sin(angle); m->m32 = 0.0; m->m33 = cos(angle);
 }
 
-void kostMakeZRotm(kostMatrix3 *m, kostReal angle)
+void kostMakeZRotm(kostMatrix3 *m, btScalar angle)
 {
 	m->m11 = cos(angle); m->m12 = -sin(angle); m->m13 = 0.0;
 	m->m21 = sin(angle); m->m22 =  cos(angle); m->m23 = 0.0;
@@ -120,7 +120,7 @@ void kostMakeZRotm(kostMatrix3 *m, kostReal angle)
 
 void kostMakeTransposem(kostMatrix3 *m)
 {
-	kostReal tmp;
+	btScalar tmp;
 
 #define myswap(a, b) tmp = a; a = b; b = tmp;
 
@@ -129,9 +129,9 @@ void kostMakeTransposem(kostMatrix3 *m)
 	myswap(m->m23, m->m32);
 }
 
-kostVector3 kostMulmv(const kostMatrix3 *m, const kostVector3 *v)
+btVector3 kostMulmv(const kostMatrix3 *m, const btVector3 *v)
 {
-	kostVector3 ret;
+	btVector3 ret;
 	ret.x = m->m11 * v->x + m->m12 * v->y + m->m13 * v->z;
 	ret.y = m->m21 * v->x + m->m22 * v->y + m->m23 * v->z;
 	ret.z = m->m31 * v->x + m->m32 * v->y + m->m33 * v->z;
