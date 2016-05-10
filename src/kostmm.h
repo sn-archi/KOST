@@ -32,23 +32,29 @@ This header file defines a C++ API
 
 #ifdef KOSTMM_LINALG_OPERATORS_MATRIX3
 
-inline kostMatrix3 operator*(const kostMatrix3 &m1, const kostMatrix3 &m2)
-	{return kostMulmm(&m1, &m2);}
-
-inline btVector3 operator*(const kostMatrix3 &m, btVector3 &v)
-	{return kostMulmv(&m, &v);}
-
-inline btVector3 &operator*=(btVector3 &v, const kostMatrix3 &m)
+inline kostMatrix3 operator* (const kostMatrix3 &m1, const kostMatrix3 &m2)
 {
-	v = kostMulmv(&m, &v);
-	return v;
+  return kostMulmm (&m1, &m2);
+}
+
+inline btVector3 operator* (const kostMatrix3 &m, btVector3 &v)
+{
+  return kostMulmv (&m, &v);
+}
+
+inline btVector3 &operator*= (btVector3 &v, const kostMatrix3 &m)
+{
+  v = kostMulmv (&m, &v);
+  return v;
 }
 
 #endif
 
 #ifndef makeTranspose
-inline void makeTranspose(kostMatrix3 &m)
-	{kostMakeTransposem(&m);}
+inline void makeTranspose (kostMatrix3 &m)
+{
+  kostMakeTransposem (&m);
+}
 #endif
 
 #endif

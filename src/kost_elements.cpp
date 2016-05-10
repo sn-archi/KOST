@@ -138,576 +138,640 @@ Added implementation of:
 
 #include "kost_elements.h"
 
-btScalar kostGetMeanAnomaly (
-  btScalar mu,                   /* standard gravitational parameter */
-  const kostElements *elements) { /* pointer to orbital elements at epoch */
-  btScalar meanAnomaly;
-  /* calc mean anomaly */
-  meanAnomaly = elements->L - elements->omegab;
+namespace mKOST
+{
+  btScalar kostGetMeanAnomaly (
+    btScalar mu,                   /* standard gravitational parameter */
+    const kostElements* elements)   /* pointer to orbital elements at epoch */
+  {
+    btScalar meanAnomaly;
+    /* calc mean anomaly */
+    meanAnomaly = elements->L - elements->omegab;
 
-  if (elements->e < 1.0) {
-    /* check range is in 0 to 2*pi */
-    if (meanAnomaly < 0.0) meanAnomaly += M_TWOPI;
-    if (meanAnomaly >  M_TWOPI) meanAnomaly -= M_TWOPI;
-    }
+    if (elements->e < 1.0)
+      {
+        /* check range is in 0 to 2*pi */
+        if (meanAnomaly < 0.0) meanAnomaly += M_TWOPI;
+        if (meanAnomaly >  M_TWOPI) meanAnomaly -= M_TWOPI;
+      }
 
-  return meanAnomaly;
+    return meanAnomaly;
   }
 
-int kostGetEccentricAnomaly (
-  const kostElements *elements,      /* pointer to orbital elements at epoch */
-  btScalar *eccentricAnomaly,        /* location where result will be stored */
-  btScalar meanAnomaly,              /* mean anomaly */
-  btScalar eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
-  btScalar maxRelativeError,         /* maximum relative error in eccentric anomaly */
-  int maxIterations) {               /* max number of iterations for calculating eccentric anomaly */
-  /* Code will terminate when either maxIterations or maxRelativeError is reached.
-   * Returns number of iterations if relativeError < maxRelativeError, returns 0 otherwise. */
+  int kostGetEccentricAnomaly (
+    const kostElements* elements,      /* pointer to orbital elements at epoch */
+    btScalar* eccentricAnomaly,        /* location where result will be stored */
+    btScalar meanAnomaly,              /* mean anomaly */
+    btScalar eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
+    btScalar maxRelativeError,         /* maximum relative error in eccentric anomaly */
+    int maxIterations)                 /* max number of iterations for calculating eccentric anomaly */
+  {
+    /* Code will terminate when either maxIterations or maxRelativeError is reached.
+     * Returns number of iterations if relativeError < maxRelativeError, returns 0 otherwise. */
 
-  /* Pseudocode
-   *
-   * do
-   *  calculate next estimate of the root of Kepler's equation using Newton's method
-   *  calculate estimate of mean anomaly from estimate of eccentric anomaly
-   *  calculate relativeError
-   * while ((iterations<=maxIterations)&&(relativeError<maxRelativeError))
-   * if iterations<=maxIterations return iterations, else return 0 */
+    /* Pseudocode
+     *
+     * do
+     *  calculate next estimate of the root of Kepler's equation using Newton's method
+     *  calculate estimate of mean anomaly from estimate of eccentric anomaly
+     *  calculate relativeError
+     * while ((iterations<=maxIterations)&&(relativeError<maxRelativeError))
+     * if iterations<=maxIterations return iterations, else return 0 */
 
-  int i;
-  btScalar relativeError, meanAnomalyEstimate, e;
+    int i;
+    btScalar relativeError, meanAnomalyEstimate, e;
 
-  if (elements->e == 0.0) { /* circular orbit */
-    *eccentricAnomaly = meanAnomaly;
-    return 1;
-    }
+    if (elements->e == 0.0)   /* circular orbit */
+      {
+        *eccentricAnomaly = meanAnomaly;
+        return 1;
+      }
 
-  if (elements->e == 1.0) /* parabolic orbit - approximate to hyperbolic */
-    e = elements->e + KOST_VERYSMALL;
-  else
+    if (elements->e == 1.0) /* parabolic orbit - approximate to hyperbolic */
+      e = elements->e + KOST_VERYSMALL;
+    else
+      e = elements->e;
+
+    i = 0;
+    do
+      {
+        if (elements->e < 1.0)   /* elliptical orbit */
+          {
+            /* calculate next estimate of the root of Kepler's equation using Newton's method */
+            eccentricAnomalyEstimate = eccentricAnomalyEstimate - (eccentricAnomalyEstimate - e * sin (eccentricAnomalyEstimate) - meanAnomaly) / (1 - e * cos (eccentricAnomalyEstimate) );
+            /* calculate estimate of mean anomaly from estimate of eccentric anomaly */
+            meanAnomalyEstimate = eccentricAnomalyEstimate - e * sin (eccentricAnomalyEstimate);
+          }
+        else   /* hyperbolic orbit */
+          {
+            /* calculate next estimate of the root of Kepler's equation using Newton's method */
+            eccentricAnomalyEstimate = eccentricAnomalyEstimate - (e * sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate - meanAnomaly) / (e * cosh (eccentricAnomalyEstimate) - 1.0);
+            /* calculate estimate of mean anomaly from estimate of eccentric anomaly */
+            meanAnomalyEstimate = e * sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate;
+          }
+        /* calculate relativeError */
+        relativeError = 1.0 - meanAnomalyEstimate / meanAnomaly;
+        i++;
+      }
+    while ( (i < maxIterations) && (fabs (relativeError) > fabs (maxRelativeError) ) );
+
+    if (elements->e < 1.0)
+      {
+        /* check range is in 0 to 2*pi */
+        eccentricAnomalyEstimate = fmod (eccentricAnomalyEstimate, M_TWOPI);
+        if (eccentricAnomalyEstimate < 0.0) eccentricAnomalyEstimate += M_TWOPI;
+        if (eccentricAnomalyEstimate > M_TWOPI) eccentricAnomalyEstimate -= M_TWOPI;
+      }
+
+    *eccentricAnomaly = eccentricAnomalyEstimate;
+
+    if ( fabs (relativeError) < fabs (maxRelativeError) )
+      return i;
+    else
+      return 0;
+  }
+
+  int kostGetTrueAnomaly (
+    btScalar mu,                  /* standard gravitational parameter */
+    const kostElements* elements, /* pointer to orbital elements at epoch */
+    btScalar* trueAnomaly,        /* location where result will be stored */
+    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+    int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
+  {
+    /* Returns number of iterations if successful, returns 0 otherwise. */
+
+    /* Pseudocode
+     *
+     * get mean anomaly
+     * get eccentric anomaly
+     * calc true anomaly */
+
+    int ret;
+    btScalar meanAnomaly, eccentricAnomaly;
+
+    /* get mean anomaly */
+    meanAnomaly = kostGetMeanAnomaly (mu, elements);
+
+    /* get eccentric anomaly */
+    if (elements->e < 1.0)
+      {
+        ret = kostGetEccentricAnomaly (
+                elements, &eccentricAnomaly,
+                meanAnomaly, meanAnomaly,
+                maxRelativeError, maxIterations);
+      }
+    else
+      {
+        ret = kostGetEccentricAnomaly (
+                elements, &eccentricAnomaly,
+                meanAnomaly, log (2.0 * meanAnomaly / elements->e + 1.8),
+                maxRelativeError, maxIterations);
+      }
+
+    /* calc true anomaly */
+    *trueAnomaly = kostGetTrueAnomaly2 (mu, elements, eccentricAnomaly);
+
+    return ret;
+  }
+
+  btScalar kostGetTrueAnomaly2 (
+    btScalar mu,                  /* standard gravitational parameter */
+    const kostElements* elements, /* pointer to orbital elements at epoch */
+    btScalar eccentricAnomaly)    /* eccentric anomaly */
+  {
+    btScalar ret;
+    if (elements->e < 1.0)   /* elliptical orbit */
+      {
+        ret = 2.0 * atan (sqrt ( (1.0 + elements->e) / (1.0 - elements->e) ) * tan (eccentricAnomaly / 2.0) );
+      }
+    else   /* hyperbolic orbit */
+      {
+        ret = acos ( (cosh (eccentricAnomaly) - elements->e) / (1 - elements->e * cosh (eccentricAnomaly) ) );
+        if (eccentricAnomaly < 0.0) ret = -ret; /* Always the same sign */
+      }
+
+    return ret;
+  }
+
+  void kostElements2StateVector2 (
+    btScalar mu,                  /* standard gravitational parameter */
+    const kostElements* elements, /* pointer to orbital elements at epoch */
+    kostStateVector* state,       /* pointer to location where state vector at epoch will be stored */
+    btScalar trueAnomaly)         /* true anomaly */
+  {
+    /* Pseudocode
+     *
+     * calc nodal vector, n
+     * calc angular momentum vector, h
+     * calc position vector
+     * calc argument of position
+     * calc direction of position vector
+     * calc length of position vector
+     * calc velocity vector
+     * calculate magnitude of velocity vector
+     * calc components of velocity vector perpendicular and parallel to radius vector
+     * add to get velocity vector */
+
+    btVector3 n; /* unit vector in direction of ascending node */
+    btVector3 h; /* angular momentum vector */
+    btVector3 north; /* unit vector pointing ecliptic north */
+    btVector3 vPro, vO; /* prograde and outward components of velocity vector */
+    btVector3 tmpv; /* temporary vector value */
+    btScalar argPos; /* argument of position, measured from the longitude of ascending node */
+    btScalar rPe, vPe; /* radius and velocity at periapsis */
+    btScalar v2; /* magnitude squared of velocity vector */
+    btScalar e; /* eccentricity */
+    btScalar tmpr; /* temporary real value */
+
     e = elements->e;
+    if (e == 1.0) /* parabolic orbit - approximate to hyperbolic orbit */
+      e += KOST_VERYSMALL;
 
-  i = 0;
-  do {
-    if (elements->e < 1.0) { /* elliptical orbit */
-      /* calculate next estimate of the root of Kepler's equation using Newton's method */
-      eccentricAnomalyEstimate = eccentricAnomalyEstimate - (eccentricAnomalyEstimate - e * sin (eccentricAnomalyEstimate) - meanAnomaly) / (1 - e * cos (eccentricAnomalyEstimate) );
-      /* calculate estimate of mean anomaly from estimate of eccentric anomaly */
-      meanAnomalyEstimate = eccentricAnomalyEstimate - e * sin (eccentricAnomalyEstimate);
+    /* calc nodal vector */
+    n = btVector3 (std::cos (elements->theta), 0.0, std::sin (elements->theta) );
+
+    /* equatorial north vector */
+    north = btVector3 (0.0, 1.0, 0.0);
+
+    /* calc angular momentum vector, h */
+    /* projection of h in ecliptic (xz) plane */
+    h = n.cross (north);
+    h = std::sin (elements->i) * h;
+
+    /* elevation of h */
+    h.setZ (cos (elements->i) );
+    h.normalize() ;
+
+    /* calc magnitude of h */
+    /* calc radius and velocity at periapsis */
+    if (e < 1.0)   /* elliptical orbit */
+      {
+        rPe = elements->a * (1.0 - e * e) / (1.0 + e);
+        vPe = sqrt (mu * (2.0 / rPe - 1.0 / elements->a) );
       }
-    else { /* hyperbolic orbit */
-      /* calculate next estimate of the root of Kepler's equation using Newton's method */
-      eccentricAnomalyEstimate = eccentricAnomalyEstimate - (e * sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate - meanAnomaly) / (e * cosh (eccentricAnomalyEstimate) - 1.0);
-      /* calculate estimate of mean anomaly from estimate of eccentric anomaly */
-      meanAnomalyEstimate = e * sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate;
+    else   /* hyperbolic orbit */
+      {
+        rPe = std::fabs (elements->a) * (e * e - 1.0) / (1.0 + e);
+        vPe = std::sqrt (mu * (2.0 / rPe + 1.0 / fabs (elements->a) ) );
       }
-    /* calculate relativeError */
-    relativeError = 1.0 - meanAnomalyEstimate / meanAnomaly;
-    i++;
-    }
-  while ( (i < maxIterations) && (fabs (relativeError) > fabs (maxRelativeError) ) );
+    /* calc h */
+    h = (rPe * vPe) * h;
 
-  if (elements->e < 1.0) {
-    /* check range is in 0 to 2*pi */
-    eccentricAnomalyEstimate = fmod (eccentricAnomalyEstimate, M_TWOPI);
-    if (eccentricAnomalyEstimate < 0.0) eccentricAnomalyEstimate += M_TWOPI;
-    if (eccentricAnomalyEstimate > M_TWOPI) eccentricAnomalyEstimate -= M_TWOPI;
-    }
-
-  *eccentricAnomaly = eccentricAnomalyEstimate;
-
-  if ( fabs (relativeError) < fabs (maxRelativeError) )
-    return i;
-  else
-    return 0;
-  }
-
-int kostGetTrueAnomaly (
-  btScalar mu,                  /* standard gravitational parameter */
-  const kostElements *elements, /* pointer to orbital elements at epoch */
-  btScalar *trueAnomaly,        /* location where result will be stored */
-  btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
-  int maxIterations) {          /* max number of iterations for calculating eccentric anomaly */
-  /* Returns number of iterations if successful, returns 0 otherwise. */
-
-  /* Pseudocode
-   *
-   * get mean anomaly
-   * get eccentric anomaly
-   * calc true anomaly */
-
-  int ret;
-  btScalar meanAnomaly, eccentricAnomaly;
-
-  /* get mean anomaly */
-  meanAnomaly = kostGetMeanAnomaly (mu, elements);
-
-  /* get eccentric anomaly */
-  if (elements->e < 1.0) {
-    ret = kostGetEccentricAnomaly (
-            elements, &eccentricAnomaly,
-            meanAnomaly, meanAnomaly,
-            maxRelativeError, maxIterations);
-    }
-  else {
-    ret = kostGetEccentricAnomaly (
-            elements, &eccentricAnomaly,
-            meanAnomaly, log (2.0 * meanAnomaly / elements->e + 1.8),
-            maxRelativeError, maxIterations);
-    }
-
-  /* calc true anomaly */
-  *trueAnomaly = kostGetTrueAnomaly2 (mu, elements, eccentricAnomaly);
-
-  return ret;
-  }
-
-btScalar kostGetTrueAnomaly2 (
-  btScalar mu,                  /* standard gravitational parameter */
-  const kostElements *elements, /* pointer to orbital elements at epoch */
-  btScalar eccentricAnomaly) {  /* eccentric anomaly */
-  btScalar ret;
-  if (elements->e < 1.0) { /* elliptical orbit */
-    ret = 2.0 * atan (sqrt ( (1.0 + elements->e) / (1.0 - elements->e) ) * tan (eccentricAnomaly / 2.0) );
-    }
-  else { /* hyperbolic orbit */
-    ret = acos ( (cosh (eccentricAnomaly) - elements->e) / (1 - elements->e * cosh (eccentricAnomaly) ) );
-    if (eccentricAnomaly < 0.0) ret = -ret; /* Always the same sign */
-    }
-
-  return ret;
-  }
-
-void kostElements2StateVector2 (
-  btScalar mu,                  /* standard gravitational parameter */
-  const kostElements *elements, /* pointer to orbital elements at epoch */
-  kostStateVector *state,       /* pointer to location where state vector at epoch will be stored */
-  btScalar trueAnomaly) {       /* true anomaly */
-  /* Pseudocode
-   *
-   * calc nodal vector, n
-   * calc angular momentum vector, h
-   * calc position vector
-   * calc argument of position
-   * calc direction of position vector
-   * calc length of position vector
-   * calc velocity vector
-   * calculate magnitude of velocity vector
-   * calc components of velocity vector perpendicular and parallel to radius vector
-   * add to get velocity vector */
-
-  btVector3 n; /* unit vector in direction of ascending node */
-  btVector3 h; /* angular momentum vector */
-  btVector3 north; /* unit vector pointing ecliptic north */
-  btVector3 vPro, vO; /* prograde and outward components of velocity vector */
-  btVector3 tmpv; /* temporary vector value */
-  btScalar argPos; /* argument of position, measured from the longitude of ascending node */
-  btScalar rPe, vPe; /* radius and velocity at periapsis */
-  btScalar v2; /* magnitude squared of velocity vector */
-  btScalar e; /* eccentricity */
-  btScalar tmpr; /* temporary real value */
-
-  e = elements->e;
-  if (e == 1.0) /* parabolic orbit - approximate to hyperbolic orbit */
-    e += KOST_VERYSMALL;
-
-  /* calc nodal vector */
-  n = btVector3 (std::cos (elements->theta), 0.0, std::sin (elements->theta) );
-
-  /* equatorial north vector */
-  north = btVector3 (0.0, 1.0, 0.0);
-
-  /* calc angular momentum vector, h */
-  /* projection of h in ecliptic (xz) plane */
-  h = n.cross (north);
-  h = std::sin (elements->i) * h;
-
-  /* elevation of h */
-  h.setZ (cos (elements->i) );
-  h.normalize() ;
-
-  /* calc magnitude of h */
-  /* calc radius and velocity at periapsis */
-  if (e < 1.0) { /* elliptical orbit */
-    rPe = elements->a * (1.0 - e * e) / (1.0 + e);
-    vPe = sqrt (mu * (2.0 / rPe - 1.0 / elements->a) );
-    }
-  else { /* hyperbolic orbit */
-    rPe = std::fabs (elements->a) * (e * e - 1.0) / (1.0 + e);
-    vPe = std::sqrt (mu * (2.0 / rPe + 1.0 / fabs (elements->a) ) );
-    }
-  /* calc h */
-  h = (rPe * vPe) * h;
-
-  /* calc position vector */
-  /* calc argument of position */
-  argPos = elements->omegab - elements->theta + trueAnomaly;
-
-  /*
-  calc direction of position vector:
-  r/|r| = sin(ArgPos) * ((h / |h|) x n) + cos(argPos) * n
-  */
-  tmpv = std::cos (argPos) * n;
-  state->pos = h.normalized();
-  state->pos = state->pos.cross (n);
-  state->pos = std::sin (argPos) * state->pos;
-  state->pos = state->pos + tmpv;
-
-  /* calc length of position vector */
-  if (e < 1.0) /* elliptical orbit */
-    state->pos = elements->a * (1.0 - e * e) / (1.0 + e * cos (trueAnomaly) ) * state->pos;
-  else /* hyperbolic orbit */
-    state->pos = fabs (elements->a) * (e * e - 1.0) / (1.0 + e * cos (trueAnomaly) ) * state->pos;
-
-  /* calc velocity vector */
-  /*  calculate magnitude of velocity vector */
-  if (e < 1.0) { /* elliptical orbit */
-    v2 = mu * (2.0 / state->pos.length() ) - 1.0 / elements->a;
-    }
-  else { /* hyperbolic orbit */
-    v2 = mu * (2.0 / state->pos.length() ) + 1.0 / std::fabs (elements->a);
-    }
-
-  /* calc components of velocity vector perpendicular and parallel to radius vector:
-
-  perpendicular:
-  vPro = (|h|/|pos|) * normal(h x pos)
-
-  parallel:
-  vO = sqrt(v^2 - |vPro|^2) * sign(sin(trueAnomaly)) * normal(pos)
-  */
-  vPro = h.cross (state->pos);
-  vPro.normalize();
-  vPro = (h.length() / state->pos.length() ) * vPro;
-
-  tmpr = std::sin (trueAnomaly);
-  if (tmpr == 0.0) { /* check for apsis condition to avoid divide by zero */
-    vO = btVector3 (0.0, 0.0, 0.0);
-    }
-  else {
-    btScalar signSinTrueAnomaly = tmpr / std::fabs (tmpr);
-
-    btScalar v0_sq = v2 - vPro.length2();
-    /* check for small negative numbers resulting from rounding */
-    if (v0_sq < 0.0) v0_sq = 0.0;
-
-    vO = state->pos.normalized();
-    vO = (sqrt (v0_sq) * signSinTrueAnomaly) * vO;
-    }
-
-  /* add to get velocity vector */
-  state->vel = vPro + vO;
-  }
-
-int kostElements2StateVector (
-  btScalar mu,                  /* standard gravitational parameter */
-  const kostElements *elements, /* pointer to orbital elements at epoch */
-  kostStateVector *state,       /* pointer to location where state vector will be stored */
-  btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
-  int maxIterations) {          /* max number of iterations for calculating eccentric anomaly */
-  /*
-  Code based on kostElements2StateVector1, made by TBlaxland
-  */
-
-  /* Returns number of iterations if successful, returns 0 otherwise. */
-
-  /* Pseudocode
-   *
-   * get true anomaly
-   * get longitude of ascending node and argument of periapsis
-   * calc state vectors */
-
-  int ret;
-  btScalar trueAnomaly;
-
-  /* get true anomaly */
-  ret = kostGetTrueAnomaly (mu, elements, &trueAnomaly, maxRelativeError, maxIterations);
-
-  /* calc state vectors */
-  kostElements2StateVector2 (mu, elements, state, trueAnomaly);
-
-  return ret;
-  }
-
-void kostStateVector2Elements (
-  btScalar mu,
-  const kostStateVector *state,
-  kostElements *elements,
-  kostOrbitParam *params) {
-  /*
-  See appendix C in orbiter.pdf
-  */
-
-  btVector3 vel, h, n, e;
-  btScalar absh, absn, absr, abse, E, tPe;
-  bool isEquatorial, isCircular, isHyperbola;
-  bool sin_TrA_isNegative = false;
-
-  if (params == NULL) {
-    static kostOrbitParam dummy;
-    params = &dummy;
-    }
-
-  vel = state->vel;
-
-  absr  = state->pos.length();
-
-  h = state->pos.cross (vel);
-  absh = h.length();
-
-  /*
-  Radial orbits are not supported.
-  e is not significantly different from 1.0
-  if |h| < sqrt(epsilon * mu * |r|)
-  */
-  if (absh * absh < KOST_VERYSMALL * mu * absr) {
-    /*
-    We assume that the position is non-zero.
-    Otherwise, we are in a singularity anyway,
-    and no formula will get us out of there.
-    */
-    btVector3 v_ortho, v_parallel;
-    btScalar v_ortho_size;
-
-    /* component of v parallel to pos */
-    v_parallel = (state->pos.dot (vel) / state->pos.length2() ) * state->pos;
+    /* calc position vector */
+    /* calc argument of position */
+    argPos = elements->omegab - elements->theta + trueAnomaly;
 
     /*
-    Calculate how large the orthogonal component
-    should be to make e significantly different
-    from 1.0:
-
-    |v_ortho| = sqrt(epsilon*mu / |r|)
+    calc direction of position vector:
+    r/|r| = sin(ArgPos) * ((h / |h|) x n) + cos(argPos) * n
     */
-    v_ortho_size = sqrt (KOST_VERYSMALL * mu / absr);
+    tmpv = std::cos (argPos) * n;
+    state->pos = h.normalized();
+    state->pos = state->pos.cross (n);
+    state->pos = std::sin (argPos) * state->pos;
+    state->pos = state->pos + tmpv;
 
-    /* New orthogonal component */
-    v_ortho = btVector3 (0.0, 1.0, 0.0);
-    v_ortho = state->pos.cross (v_ortho);
-    v_ortho = (v_ortho_size / v_ortho.length() ) * v_ortho;
+    /* calc length of position vector */
+    if (e < 1.0) /* elliptical orbit */
+      state->pos = elements->a * (1.0 - e * e) / (1.0 + e * cos (trueAnomaly) ) * state->pos;
+    else /* hyperbolic orbit */
+      state->pos = fabs (elements->a) * (e * e - 1.0) / (1.0 + e * cos (trueAnomaly) ) * state->pos;
 
-    /* replace the old orthogonal part */
-    vel = v_parallel + v_ortho;
+    /* calc velocity vector */
+    /*  calculate magnitude of velocity vector */
+    if (e < 1.0)   /* elliptical orbit */
+      {
+        v2 = mu * (2.0 / state->pos.length() ) - 1.0 / elements->a;
+      }
+    else   /* hyperbolic orbit */
+      {
+        v2 = mu * (2.0 / state->pos.length() ) + 1.0 / std::fabs (elements->a);
+      }
+
+    /* calc components of velocity vector perpendicular and parallel to radius vector:
+
+    perpendicular:
+    vPro = (|h|/|pos|) * normal(h x pos)
+
+    parallel:
+    vO = sqrt(v^2 - |vPro|^2) * sign(sin(trueAnomaly)) * normal(pos)
+    */
+    vPro = h.cross (state->pos);
+    vPro.normalize();
+    vPro = (h.length() / state->pos.length() ) * vPro;
+
+    tmpr = std::sin (trueAnomaly);
+    if (tmpr == 0.0)   /* check for apsis condition to avoid divide by zero */
+      {
+        vO = btVector3 (0.0, 0.0, 0.0);
+      }
+    else
+      {
+        btScalar signSinTrueAnomaly = tmpr / std::fabs (tmpr);
+
+        btScalar v0_sq = v2 - vPro.length2();
+        /* check for small negative numbers resulting from rounding */
+        if (v0_sq < 0.0) v0_sq = 0.0;
+
+        vO = state->pos.normalized();
+        vO = (sqrt (v0_sq) * signSinTrueAnomaly) * vO;
+      }
+
+    /* add to get velocity vector */
+    state->vel = vPro + vO;
+  }
+
+  int kostElements2StateVector (
+    btScalar mu,                  /* standard gravitational parameter */
+    const kostElements* elements, /* pointer to orbital elements at epoch */
+    kostStateVector* state,       /* pointer to location where state vector will be stored */
+    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+    int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
+  {
+    /*
+    Code based on kostElements2StateVector1, made by TBlaxland
+    */
+
+    /* Returns number of iterations if successful, returns 0 otherwise. */
+
+    /* Pseudocode
+     *
+     * get true anomaly
+     * get longitude of ascending node and argument of periapsis
+     * calc state vectors */
+
+    int ret;
+    btScalar trueAnomaly;
+
+    /* get true anomaly */
+    ret = kostGetTrueAnomaly (mu, elements, &trueAnomaly, maxRelativeError, maxIterations);
+
+    /* calc state vectors */
+    kostElements2StateVector2 (mu, elements, state, trueAnomaly);
+
+    return ret;
+  }
+
+  void kostStateVector2Elements (
+    btScalar mu,
+    const kostStateVector* state,
+    kostElements* elements,
+    kostOrbitParam* params)
+  {
+    /*
+    See appendix C in orbiter.pdf
+    */
+
+    btVector3 vel, h, n, e;
+    btScalar absh, absn, absr, abse, E, tPe;
+    bool isEquatorial, isCircular, isHyperbola;
+    bool sin_TrA_isNegative = false;
+
+    if (params == NULL)
+      {
+        static kostOrbitParam dummy;
+        params = &dummy;
+      }
+
+    vel = state->vel;
+
+    absr  = state->pos.length();
 
     h = state->pos.cross (vel);
     absh = h.length();
-    }
 
-  n = btVector3 (-h.getZ(), h.getX(), 0.0);
-  absn = n.length();
-
-  E = 0.5 * vel.length2() - mu / absr;
-  if (E == 0.0)
-    E = KOST_VERYSMALL;
-
-  /*
-  Alternative formula for e:
-  e = (v x h) / mu - r / |r|
-  */
-  e = vel.cross (h);
-  e = (absr / mu) * e;
-  e = e - state->pos;
-  e = (1.0 / absr) * e;
-
-  abse = e.length();
-
-  /* parabolic orbit are not supported */
-  if (abse > 1.0 - KOST_VERYSMALL && abse < 1.0 + KOST_VERYSMALL) {
-    if (E >= 0.0) {
-      abse = 1.0 + KOST_VERYSMALL; /* Approximate with hyperbolic */
-      }
-    else {
-      abse = 1.0 - KOST_VERYSMALL; /* Approximate with elliptic */
-      }
-    }
-
-  isEquatorial = absn < KOST_VERYSMALL;
-  isCircular   = abse < KOST_VERYSMALL;
-  isHyperbola  = abse >= 1.0;
-
-  /*SMa*/
-  elements->a = -mu / (2.0 * E);
-
-  /*Ecc*/
-  elements->e = abse;
-
-  /*
-  dp = a * (1-e)
-  da = a * (1+e)
-  */
-  params->PeD = elements->a * (1.0 - elements->e);
-  params->ApD = elements->a * (1.0 + elements->e);
-
-  /*Inc*/
-  if (absh == 0.0) {
     /*
-    Avoid division by zero absh
-    By convention, take the smallest possible i,
-    which is the angle between r and the
-    equatorial plane.
+    Radial orbits are not supported.
+    e is not significantly different from 1.0
+    if |h| < sqrt(epsilon * mu * |r|)
     */
-    elements->i = std::asin (state->pos.getY() / absr);
-    }
-  else {
-    elements->i = std::acos (h.getY() / absh);
-    }
+    if (absh * absh < KOST_VERYSMALL * mu * absr)
+      {
+        /*
+        We assume that the position is non-zero.
+        Otherwise, we are in a singularity anyway,
+        and no formula will get us out of there.
+        */
+        btVector3 v_ortho, v_parallel;
+        btScalar v_ortho_size;
 
-  /*LAN*/
-  if (isEquatorial) {
-    elements->theta = 0.0;
-    }
-  else {
-    elements->theta = std::acos (n.getX() / absn);
-    if (n.getZ() < 0.0) elements->theta = M_TWOPI - elements->theta;
-    }
+        /* component of v parallel to pos */
+        v_parallel = (state->pos.dot (vel) / state->pos.length2() ) * state->pos;
 
-  /*AgP*/
-  params->AgP = 0.0;
-  if (isCircular) {
+        /*
+        Calculate how large the orthogonal component
+        should be to make e significantly different
+        from 1.0:
+
+        |v_ortho| = sqrt(epsilon*mu / |r|)
+        */
+        v_ortho_size = sqrt (KOST_VERYSMALL * mu / absr);
+
+        /* New orthogonal component */
+        v_ortho = btVector3 (0.0, 1.0, 0.0);
+        v_ortho = state->pos.cross (v_ortho);
+        v_ortho = (v_ortho_size / v_ortho.length() ) * v_ortho;
+
+        /* replace the old orthogonal part */
+        vel = v_parallel + v_ortho;
+
+        h = state->pos.cross (vel);
+        absh = h.length();
+      }
+
+    n = btVector3 (-h.getZ(), h.getX(), 0.0);
+    absn = n.length();
+
+    E = 0.5 * vel.length2() - mu / absr;
+    if (E == 0.0)
+      E = KOST_VERYSMALL;
+
+    /*
+    Alternative formula for e:
+    e = (v x h) / mu - r / |r|
+    */
+    e = vel.cross (h);
+    e = (absr / mu) * e;
+    e = e - state->pos;
+    e = (1.0 / absr) * e;
+
+    abse = e.length();
+
+    /* parabolic orbit are not supported */
+    if (abse > 1.0 - KOST_VERYSMALL && abse < 1.0 + KOST_VERYSMALL)
+      {
+        if (E >= 0.0)
+          {
+            abse = 1.0 + KOST_VERYSMALL; /* Approximate with hyperbolic */
+          }
+        else
+          {
+            abse = 1.0 - KOST_VERYSMALL; /* Approximate with elliptic */
+          }
+      }
+
+    isEquatorial = absn < KOST_VERYSMALL;
+    isCircular   = abse < KOST_VERYSMALL;
+    isHyperbola  = abse >= 1.0;
+
+    /*SMa*/
+    elements->a = -mu / (2.0 * E);
+
+    /*Ecc*/
+    elements->e = abse;
+
+    /*
+    dp = a * (1-e)
+    da = a * (1+e)
+    */
+    params->PeD = elements->a * (1.0 - elements->e);
+    params->ApD = elements->a * (1.0 + elements->e);
+
+    /*Inc*/
+    if (absh == 0.0)
+      {
+        /*
+        Avoid division by zero absh
+        By convention, take the smallest possible i,
+        which is the angle between r and the
+        equatorial plane.
+        */
+        elements->i = std::asin (state->pos.getY() / absr);
+      }
+    else
+      {
+        elements->i = std::acos (h.getY() / absh);
+      }
+
+    /*LAN*/
+    if (isEquatorial)
+      {
+        elements->theta = 0.0;
+      }
+    else
+      {
+        elements->theta = std::acos (n.getX() / absn);
+        if (n.getZ() < 0.0) elements->theta = M_TWOPI - elements->theta;
+      }
+
+    /*AgP*/
     params->AgP = 0.0;
-    }
-  else if (isEquatorial) {
-    params->AgP = atan2 (e.getZ(), e.getX() );
-    if (h.getY() < 0.0) params->AgP = -params->AgP;
-    }
-  else {
-    params->AgP = std::acos (n.dot (e) ) / (absn * abse);
-    if (e.getY() < 0.0) params->AgP = M_TWOPI - params->AgP;
-    }
-
-  /*TrA*/
-  sin_TrA_isNegative = false;
-  if (isCircular) {
-    if (isEquatorial) {
-      params->TrA = std::acos (state->pos.getX() / absr);
-      if (vel.getX() > 0.0) {
-        sin_TrA_isNegative = true;
-        params->TrA = M_TWOPI - params->TrA;
-        }
+    if (isCircular)
+      {
+        params->AgP = 0.0;
       }
-    else {
-      params->TrA = std::acos (n.dot (state->pos) ) / (absn * absr);
-      if (n.dot (vel) > 0.0) {
-        sin_TrA_isNegative = true;
-        params->TrA = M_TWOPI - params->TrA;
-        }
+    else if (isEquatorial)
+      {
+        params->AgP = atan2 (e.getZ(), e.getX() );
+        if (h.getY() < 0.0) params->AgP = -params->AgP;
       }
-    }
-  else {
-    btScalar tmp = e.dot (state->pos) / (abse * absr);
-
-    /*Avoid acos out of range:*/
-    if (tmp <= -1.0) {
-      params->TrA = M_PI;
-      }
-    else if (tmp >= 1.0) {
-      params->TrA = 0.0;
-      }
-    else {
-      params->TrA = acos (tmp);
+    else
+      {
+        params->AgP = std::acos (n.dot (e) ) / (absn * abse);
+        if (e.getY() < 0.0) params->AgP = M_TWOPI - params->AgP;
       }
 
-    if (state->pos.dot (vel) < 0.0) {
-      sin_TrA_isNegative = true;
-      params->TrA = M_TWOPI - params->TrA;
+    /*TrA*/
+    sin_TrA_isNegative = false;
+    if (isCircular)
+      {
+        if (isEquatorial)
+          {
+            params->TrA = std::acos (state->pos.getX() / absr);
+            if (vel.getX() > 0.0)
+              {
+                sin_TrA_isNegative = true;
+                params->TrA = M_TWOPI - params->TrA;
+              }
+          }
+        else
+          {
+            params->TrA = std::acos (n.dot (state->pos) ) / (absn * absr);
+            if (n.dot (vel) > 0.0)
+              {
+                sin_TrA_isNegative = true;
+                params->TrA = M_TWOPI - params->TrA;
+              }
+          }
       }
-    }
+    else
+      {
+        btScalar tmp = e.dot (state->pos) / (abse * absr);
 
-  /*Lec*/
-  params->Lec = elements->a * elements->e;
+        /*Avoid acos out of range:*/
+        if (tmp <= -1.0)
+          {
+            params->TrA = M_PI;
+          }
+        else if (tmp >= 1.0)
+          {
+            params->TrA = 0.0;
+          }
+        else
+          {
+            params->TrA = acos (tmp);
+          }
 
-  /*
-  SMi
-  b^2 = a^2 * (1 - e^2)
-  */
-  if (isHyperbola) {
-    params->SMi =
-      std::sqrt (elements->a * elements->a * (elements->e * elements->e - 1.0) );
-    }
-  else {
-    params->SMi =
-      std::sqrt (elements->a * elements->a * (1.0 - elements->e * elements->e) );
-    }
-
-  /*LPe*/
-  elements->omegab = std::fmod (elements->theta + params->AgP, M_TWOPI);
-
-  /*EcA*/
-  if (isHyperbola) {
-    btScalar tmp = (1.0 - absr / elements->a) / elements->e;
-
-    /*Avoid acosh out of range:*/
-    if (tmp <= 1.0) {
-      params->EcA = 0.0;
+        if (state->pos.dot (vel) < 0.0)
+          {
+            sin_TrA_isNegative = true;
+            params->TrA = M_TWOPI - params->TrA;
+          }
       }
-    else {
-      params->EcA = std::acosh (tmp);
+
+    /*Lec*/
+    params->Lec = elements->a * elements->e;
+
+    /*
+    SMi
+    b^2 = a^2 * (1 - e^2)
+    */
+    if (isHyperbola)
+      {
+        params->SMi =
+          std::sqrt (elements->a * elements->a * (elements->e * elements->e - 1.0) );
       }
-    }
-  else if (isCircular) {
-    params->EcA = 0.0;
-    }
-  else {
-    btScalar tmp = (1.0 - absr / elements->a) / elements->e;
-
-    /*Avoid acos out of range:*/
-    if (tmp <= -1.0) {
-      params->EcA = M_PI;
+    else
+      {
+        params->SMi =
+          std::sqrt (elements->a * elements->a * (1.0 - elements->e * elements->e) );
       }
-    else if (tmp >= 1.0) {
-      params->EcA = 0.0;
+
+    /*LPe*/
+    elements->omegab = std::fmod (elements->theta + params->AgP, M_TWOPI);
+
+    /*EcA*/
+    if (isHyperbola)
+      {
+        btScalar tmp = (1.0 - absr / elements->a) / elements->e;
+
+        /*Avoid acosh out of range:*/
+        if (tmp <= 1.0)
+          {
+            params->EcA = 0.0;
+          }
+        else
+          {
+            params->EcA = std::acosh (tmp);
+          }
       }
-    else {
-      params->EcA = std::acos (tmp);
+    else if (isCircular)
+      {
+        params->EcA = 0.0;
       }
-    }
+    else
+      {
+        btScalar tmp = (1.0 - absr / elements->a) / elements->e;
 
-  if (isHyperbola) {
-    /*Copy sign from sin(TrA)*/
-    if (sin_TrA_isNegative != (params->EcA < 0.0) )
-      params->EcA = -params->EcA;
-    }
-  else {
-    /*Same rule basically, but with EcA in 0..2pi range*/
-    if (sin_TrA_isNegative)
-      params->EcA = M_TWOPI - params->EcA;
-    }
+        /*Avoid acos out of range:*/
+        if (tmp <= -1.0)
+          {
+            params->EcA = M_PI;
+          }
+        else if (tmp >= 1.0)
+          {
+            params->EcA = 0.0;
+          }
+        else
+          {
+            params->EcA = std::acos (tmp);
+          }
+      }
 
-  /*MnA*/
-  if (isHyperbola) {
-    params->MnA = elements->e * std::sinh (params->EcA) - params->EcA;
-    }
-  else {
-    params->MnA = params->EcA - elements->e * std::sin (params->EcA);
-    }
+    if (isHyperbola)
+      {
+        /*Copy sign from sin(TrA)*/
+        if (sin_TrA_isNegative != (params->EcA < 0.0) )
+          params->EcA = -params->EcA;
+      }
+    else
+      {
+        /*Same rule basically, but with EcA in 0..2pi range*/
+        if (sin_TrA_isNegative)
+          params->EcA = M_TWOPI - params->EcA;
+      }
 
-  /*MnL*/
-  elements->L = params->MnA + elements->omegab;
-  if (!isHyperbola)
-    elements->L = std::fmod (elements->L, M_TWOPI);
+    /*MnA*/
+    if (isHyperbola)
+      {
+        params->MnA = elements->e * std::sinh (params->EcA) - params->EcA;
+      }
+    else
+      {
+        params->MnA = params->EcA - elements->e * std::sin (params->EcA);
+      }
 
-  /*TrL*/
-  params->TrL = std::fmod (elements->omegab + params->TrA, M_TWOPI);
+    /*MnL*/
+    elements->L = params->MnA + elements->omegab;
+    if (!isHyperbola)
+      elements->L = std::fmod (elements->L, M_TWOPI);
 
-  /*
-  T = 2*pi*sqrt(a^3 / mu)
+    /*TrL*/
+    params->TrL = std::fmod (elements->omegab + params->TrA, M_TWOPI);
 
-  fabs is for supporting hyperbola
-  */
-  params->T =
-    M_TWOPI * std::sqrt (fabs (elements->a * elements->a * elements->a / mu) );
+    /*
+    T = 2*pi*sqrt(a^3 / mu)
 
-  /*
-  Calculating PeT and ApT:
-  */
-  tPe = params->MnA * params->T / M_TWOPI; /*Time since last Pe*/
+    fabs is for supporting hyperbola
+    */
+    params->T =
+      M_TWOPI * std::sqrt (fabs (elements->a * elements->a * elements->a / mu) );
 
-  if (isHyperbola) {
-    params->PeT = -tPe;
-    }
-  else {
-    params->PeT = params->T - tPe;
-    }
+    /*
+    Calculating PeT and ApT:
+    */
+    tPe = params->MnA * params->T / M_TWOPI; /*Time since last Pe*/
 
-  params->ApT = 0.5 * params->T - tPe;
-  if (params->ApT < 0.0) params->ApT += params->T;
+    if (isHyperbola)
+      {
+        params->PeT = -tPe;
+      }
+    else
+      {
+        params->PeT = params->T - tPe;
+      }
+
+    params->ApT = 0.5 * params->T - tPe;
+    if (params->ApT < 0.0) params->ApT += params->T;
   }
+}

@@ -38,16 +38,16 @@ extern "C" {
 Matrix operations:
 */
 
-void kostMakeUnitm(kostMatrix3 *m);
-void kostMakeXRotm(kostMatrix3 *m, btScalar angle);
-void kostMakeYRotm(kostMatrix3 *m, btScalar angle);
-void kostMakeZRotm(kostMatrix3 *m, btScalar angle);
+void kostMakeUnitm (kostMatrix3* m);
+void kostMakeXRotm (kostMatrix3* m, btScalar angle);
+void kostMakeYRotm (kostMatrix3* m, btScalar angle);
+void kostMakeZRotm (kostMatrix3* m, btScalar angle);
 
-void kostMakeTransposem(kostMatrix3 *m);
+void kostMakeTransposem (kostMatrix3* m);
 
-btVector3 kostMulmv(const kostMatrix3 *m, const btVector3 *v);
+btVector3 kostMulmv (const kostMatrix3* m, const btVector3* v);
 
-kostMatrix3 kostMulmm(const kostMatrix3 *m1, const kostMatrix3 *m2);
+kostMatrix3 kostMulmm (const kostMatrix3* m1, const kostMatrix3* m2);
 
 /*TODO: other ones*/
 
