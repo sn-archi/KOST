@@ -22,7 +22,7 @@
 
 #include "kost_linalg.h"
 
-namespace
+namespace mKOST
 {
   void kostMakeUnitm (kostMatrix3* m)
   {

@@ -34,11 +34,11 @@ namespace mKOST
   extern "C" {
 #endif
 
-  btScalar kostGetMeanAnomaly (
+  btScalar getMeanAnomaly (
     btScalar mu,                   /* standard gravitational parameter */
     const kostElements* elements); /* pointer to orbital elements at epoch */
 
-  int kostGetEccentricAnomaly (
+  int getEccentricAnomaly (
     const kostElements* elements,      /* pointer to orbital elements at epoch */
     btScalar* eccentricAnomaly,        /* location where result will be stored */
     btScalar meanAnomaly,              /* mean anomaly */
@@ -46,32 +46,32 @@ namespace mKOST
     btScalar maxRelativeError,         /* maximum relative error in eccentric anomaly */
     int maxIterations);                /* max number of iterations for calculating eccentric anomaly */
 
-  int kostGetTrueAnomaly (
+  int getTrueAnomaly (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     btScalar* trueAnomaly,        /* location where result will be stored */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
 
-  btScalar kostGetTrueAnomaly2 (
+  btScalar getTrueAnomaly2 (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     btScalar eccentricAnomaly);   /* eccentric anomaly */
 
-  void kostElements2StateVector2 (
+  void elements2StateVector2 (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     kostStateVector* state,       /* pointer to location where state vector at epoch will be stored */
     btScalar trueAnomaly);        /* true anomaly */
 
-  int kostElements2StateVector (
+  int elements2StateVector (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     kostStateVector* state,       /* pointer to location where state vector will be stored */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
 
-  void kostStateVector2Elements (
+  void stateVector2Elements (
     btScalar mu,                  /* standard gravitational parameter */
     const kostStateVector* state, /* pointer to state vector at epoch */
     kostElements* elements,       /* pointer to location where orbital elements at epoch will be stored */

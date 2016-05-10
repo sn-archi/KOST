@@ -14,9 +14,9 @@ int main (int argc, char* argv[])
   double M = 5.9736e24;
   double mu = KOST_GRAVITATIONAL_CONSTANT * M;
 
-  kostStateVector initial, state2;
-  kostElements elements;
-  kostOrbitParam params;
+  mKOST::kostStateVector initial, state2;
+  mKOST::kostElements elements;
+  mKOST::kostOrbitParam params;
   double maxt;
 
   btVector3 output[N];
@@ -29,7 +29,7 @@ int main (int argc, char* argv[])
   initial.vel = btVector3 (0.0, 10000.0, 0.0);
 
   /*Convert to orbital elements*/
-  kostStateVector2Elements (mu, &initial, &elements, &params);
+  mKOST::stateVector2Elements (mu, &initial, &elements, &params);
 
   printf ("Orbital elements:\n"
           "     a = %e\n"
@@ -84,9 +84,9 @@ int main (int argc, char* argv[])
     {
       double t = (i * maxt) / N;
 
-      kostStateVector stateNow;
+      mKOST::kostStateVector stateNow;
 
-      kostElements2StateVectorAtTime (mu, &elements, &stateNow, t, KOST_VERYSMALL, 20, 0.0, 0.0);
+      mKOST::elements2StateVectorAtTime (mu, &elements, &stateNow, t, KOST_VERYSMALL, 20, 0.0, 0.0);
 
       output[i] = stateNow.pos;
     }

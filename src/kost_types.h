@@ -32,7 +32,6 @@ This header defines the data types of KOST.
 
 namespace mKOST
 {
-
 #ifdef __cplusplus
   extern "C" {
 #endif
@@ -102,7 +101,6 @@ namespace mKOST
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-
-#endif // KOST_TYPES_H
 }
+#endif // KOST_TYPES_H
 

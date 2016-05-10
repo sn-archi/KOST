@@ -89,7 +89,7 @@ Renamed several functions
 
 namespace mKOST
 {
-  btScalar kostGetMeanAnomalyAtTime (
+  btScalar getMeanAnomalyAtTime (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     btScalar timeSinceEpoch)      /* time since epoch in seconds */
@@ -117,7 +117,7 @@ namespace mKOST
     return meanAnomaly;
   }
 
-  int kostGetTrueAnomalyAtTime (
+  int getTrueAnomalyAtTime (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     btScalar* trueAnomaly,        /* location where result will be stored */
@@ -137,18 +137,18 @@ namespace mKOST
     btScalar meanAnomaly, eccentricAnomaly;
 
     /* get mean anomaly */
-    meanAnomaly = kostGetMeanAnomalyAtTime (mu, elements, timeSinceEpoch);
+    meanAnomaly = getMeanAnomalyAtTime (mu, elements, timeSinceEpoch);
 
     /* get eccentric anomaly */
-    ret = kostGetEccentricAnomaly (elements, &eccentricAnomaly, meanAnomaly, meanAnomaly, maxRelativeError, maxIterations);
+    ret = getEccentricAnomaly (elements, &eccentricAnomaly, meanAnomaly, meanAnomaly, maxRelativeError, maxIterations);
 
     /* calc true anomaly */
-    *trueAnomaly = kostGetTrueAnomaly2 (mu, elements, eccentricAnomaly);
+    *trueAnomaly = getTrueAnomaly2 (mu, elements, eccentricAnomaly);
 
     return ret;
   }
 
-  btScalar kostGetLANAtTime (
+  btScalar getLANAtTime (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
@@ -166,7 +166,7 @@ namespace mKOST
       return elements->theta;
   }
 
-  btScalar kostGetArgPeAtTime (
+  btScalar getArgPeAtTime (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
@@ -185,7 +185,7 @@ namespace mKOST
       return ( elements->omegab - elements->theta );
   }
 
-  int kostElements2StateVectorAtTime (
+  int elements2StateVectorAtTime (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     kostStateVector* state,       /* pointer to location where state vectors at epoch+timeSinceEpoch will be stored */
@@ -208,18 +208,18 @@ namespace mKOST
     kostElements updatedElements;
 
     /* get true anomaly */
-    ret = kostGetTrueAnomalyAtTime (mu, elements, &trueAnomaly, timeSinceEpoch, maxRelativeError, maxIterations);
+    ret = getTrueAnomalyAtTime (mu, elements, &trueAnomaly, timeSinceEpoch, maxRelativeError, maxIterations);
 
     /* update elements for new epoch */
-    kostGetElementsAtTime (mu, elements, &updatedElements, timeSinceEpoch, bodyRadius, jTwoCoeff);
+    getElementsAtTime (mu, elements, &updatedElements, timeSinceEpoch, bodyRadius, jTwoCoeff);
 
     /* calc state vectors */
-    kostElements2StateVector2 (mu, &updatedElements, state, trueAnomaly);
+    elements2StateVector2 (mu, &updatedElements, state, trueAnomaly);
 
     return ret;
   }
 
-  void kostGetElementsAtTime (
+  void getElementsAtTime (
     btScalar mu,                     /* standard gravitational parameter */
     const kostElements* elements,    /* pointer to orbital elements at epoch */
     kostElements* newElements,       /* pointer to location where elements at epoch+timeSinceEpoch will be stored */
@@ -230,18 +230,18 @@ namespace mKOST
     *newElements = *elements;
 
     /* Mean longitude: */
-    newElements->L = kostGetMeanAnomalyAtTime (mu, newElements, timeSinceEpoch) + newElements->omegab;
+    newElements->L = getMeanAnomalyAtTime (mu, newElements, timeSinceEpoch) + newElements->omegab;
 
     if (bodyRadius > KOST_VERYSMALL)
       {
         /* longitude of ascending node */
         newElements->theta =
-          kostGetLANAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
+          getLANAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
 
         /* argument of periapsis */
         newElements->omegab =
           newElements->theta +
-          kostGetArgPeAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
+          getArgPeAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
       }
   }
 }

@@ -140,7 +140,7 @@ Added implementation of:
 
 namespace mKOST
 {
-  btScalar kostGetMeanAnomaly (
+  btScalar getMeanAnomaly (
     btScalar mu,                   /* standard gravitational parameter */
     const kostElements* elements)   /* pointer to orbital elements at epoch */
   {
@@ -158,7 +158,7 @@ namespace mKOST
     return meanAnomaly;
   }
 
-  int kostGetEccentricAnomaly (
+  int getEccentricAnomaly (
     const kostElements* elements,      /* pointer to orbital elements at epoch */
     btScalar* eccentricAnomaly,        /* location where result will be stored */
     btScalar meanAnomaly,              /* mean anomaly */
@@ -231,7 +231,7 @@ namespace mKOST
       return 0;
   }
 
-  int kostGetTrueAnomaly (
+  int getTrueAnomaly (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     btScalar* trueAnomaly,        /* location where result will be stored */
@@ -250,31 +250,31 @@ namespace mKOST
     btScalar meanAnomaly, eccentricAnomaly;
 
     /* get mean anomaly */
-    meanAnomaly = kostGetMeanAnomaly (mu, elements);
+    meanAnomaly = getMeanAnomaly (mu, elements);
 
     /* get eccentric anomaly */
     if (elements->e < 1.0)
       {
-        ret = kostGetEccentricAnomaly (
+        ret = getEccentricAnomaly (
                 elements, &eccentricAnomaly,
                 meanAnomaly, meanAnomaly,
                 maxRelativeError, maxIterations);
       }
     else
       {
-        ret = kostGetEccentricAnomaly (
+        ret = getEccentricAnomaly (
                 elements, &eccentricAnomaly,
                 meanAnomaly, log (2.0 * meanAnomaly / elements->e + 1.8),
                 maxRelativeError, maxIterations);
       }
 
     /* calc true anomaly */
-    *trueAnomaly = kostGetTrueAnomaly2 (mu, elements, eccentricAnomaly);
+    *trueAnomaly = getTrueAnomaly2 (mu, elements, eccentricAnomaly);
 
     return ret;
   }
 
-  btScalar kostGetTrueAnomaly2 (
+  btScalar getTrueAnomaly2 (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     btScalar eccentricAnomaly)    /* eccentric anomaly */
@@ -293,7 +293,7 @@ namespace mKOST
     return ret;
   }
 
-  void kostElements2StateVector2 (
+  void elements2StateVector2 (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     kostStateVector* state,       /* pointer to location where state vector at epoch will be stored */
@@ -421,7 +421,7 @@ namespace mKOST
     state->vel = vPro + vO;
   }
 
-  int kostElements2StateVector (
+  int elements2StateVector (
     btScalar mu,                  /* standard gravitational parameter */
     const kostElements* elements, /* pointer to orbital elements at epoch */
     kostStateVector* state,       /* pointer to location where state vector will be stored */
@@ -444,15 +444,15 @@ namespace mKOST
     btScalar trueAnomaly;
 
     /* get true anomaly */
-    ret = kostGetTrueAnomaly (mu, elements, &trueAnomaly, maxRelativeError, maxIterations);
+    ret = getTrueAnomaly (mu, elements, &trueAnomaly, maxRelativeError, maxIterations);
 
     /* calc state vectors */
-    kostElements2StateVector2 (mu, elements, state, trueAnomaly);
+    elements2StateVector2 (mu, elements, state, trueAnomaly);
 
     return ret;
   }
 
-  void kostStateVector2Elements (
+  void stateVector2Elements (
     btScalar mu,
     const kostStateVector* state,
     kostElements* elements,
