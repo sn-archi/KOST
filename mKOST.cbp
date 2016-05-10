@@ -40,9 +40,7 @@
 		<Unit filename="examples/gnuplot/test.plot" />
 		<Unit filename="src/kost.h" />
 		<Unit filename="src/kost_constants.h" />
-		<Unit filename="src/kost_elements.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="src/kost_elements.cpp" />
 		<Unit filename="src/kost_elements.h" />
 		<Unit filename="src/kost_linalg.c">
 			<Option compilerVar="CC" />
@@ -66,7 +64,9 @@
 		<Extensions>
 			<code_completion />
 			<envvars />
-			<lib_finder disable_auto="1" />
+			<lib_finder disable_auto="0">
+				<lib name="bullet" />
+			</lib_finder>
 			<debugger />
 		</Extensions>
 	</Project>
