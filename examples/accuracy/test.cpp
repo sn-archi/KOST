@@ -10,7 +10,7 @@
 #define mu (KOST_GRAVITATIONAL_CONSTANT * M)
 
 mKOST::sStateVector sv_maxVerror, sv_maxRerror;
-btScalar maxVerror = -1.0, maxRerror = -1.0;
+btScalar maxVerror = -0.1, maxRerror = -0.1;
 
 void testState (const mKOST::sStateVector* sv)
 {
@@ -26,7 +26,7 @@ void testState (const mKOST::sStateVector* sv)
   mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
 
   diff = sv->pos - out.pos;
-  error = diff.length() / sv->pos.length();
+  error = (diff.length() / sv->pos.length())*100;
   if (error > maxRerror)
     {
       maxRerror = error;
@@ -35,15 +35,17 @@ void testState (const mKOST::sStateVector* sv)
       printf ("New pos error max:\n"
               "     pos = %e, %e, %e\n"
               "     vel = %e, %e, %e\n"
-              "     error = %e\n",
+              "     error = %f%%\n"
+              "     diff = %em\n",
               sv_maxRerror.pos.getX(), sv_maxRerror.pos.getY(), sv_maxRerror.pos.getZ(),
               sv_maxRerror.vel.getX(), sv_maxRerror.vel.getY(), sv_maxRerror.vel.getZ(),
-              maxRerror
+              maxRerror,
+              diff.length()
              );
     }
 
   diff = sv->vel - out.vel;
-  error = diff.length() / sv->vel.length();
+  error = (diff.length() / sv->vel.length())*100;
   if (error > maxVerror)
     {
       maxVerror = error;
@@ -52,10 +54,12 @@ void testState (const mKOST::sStateVector* sv)
       printf ("New vel error max:\n"
               "     pos = %e, %e, %e\n"
               "     vel = %e, %e, %e\n"
-              "     error = %e\n",
+              "     error = %f%%\n"
+              "     diff = %em/s\n",
               sv_maxVerror.pos.getX(), sv_maxVerror.pos.getY(), sv_maxVerror.pos.getZ(),
               sv_maxVerror.vel.getX(), sv_maxVerror.vel.getY(), sv_maxVerror.vel.getZ(),
-              maxVerror
+              maxVerror,
+              diff.length()
              );
     }
 }
