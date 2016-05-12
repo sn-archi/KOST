@@ -554,18 +554,27 @@ namespace mKOST
     isCircular   = abse < KOST_VERYSMALL;
     isHyperbola  = abse >= 1.0;
 
-    /*SMa*/
-    elements->a = -mu / (2.0 * E);
-
     /*Ecc*/
     elements->e = abse;
 
     /*
-    dp = a * (1-e)
-    da = a * (1+e)
+      SMa
+      dp = a * (1-e)
+      da = a * (1+e)
     */
-    params->PeD = elements->a * (1.0 - elements->e);
-    params->ApD = elements->a * (1.0 + elements->e);
+    if (isHyperbola)
+      {
+        std::cout << absh << std::endl;
+        params->PeD = h.length2() / mu;
+        elements->a = INFINITY;
+        params->ApD = INFINITY;
+      }
+    else
+      {
+        elements->a = -mu / (2.0 * E);
+        params->ApD = elements->a * (1.0 + elements->e);
+        params->PeD = elements->a * (1.0 - elements->e);
+      }
 
     /*Inc*/
     if (absh == 0.0)
@@ -607,7 +616,7 @@ namespace mKOST
       }
     else
       {
-        params->AgP = std::acos (n.dot (e) ) / (absn * abse);
+        params->AgP = std::acos (n.dot (e) / (absn * abse));
         if (e.getY() < 0.0) params->AgP = M_TWOPI - params->AgP;
       }
 
