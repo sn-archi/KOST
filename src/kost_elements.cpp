@@ -564,7 +564,6 @@ namespace mKOST
     */
     if (isHyperbola)
       {
-        std::cout << absh << std::endl;
         params->PeD = h.length2() / mu;
         elements->a = INFINITY;
         params->ApD = INFINITY;
