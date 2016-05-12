@@ -91,7 +91,7 @@ namespace mKOST
 {
   btScalar getMeanAnomalyAtTime (
     btScalar mu,                  /* standard gravitational parameter */
-    const kostElements* elements, /* pointer to orbital elements at epoch */
+    const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar timeSinceEpoch)      /* time since epoch in seconds */
   {
     /* Pseudocode
@@ -119,7 +119,7 @@ namespace mKOST
 
   int getTrueAnomalyAtTime (
     btScalar mu,                  /* standard gravitational parameter */
-    const kostElements* elements, /* pointer to orbital elements at epoch */
+    const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar* trueAnomaly,        /* location where result will be stored */
     btScalar timeSinceEpoch,      /* time since epoch in seconds */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
@@ -150,7 +150,7 @@ namespace mKOST
 
   btScalar getLANAtTime (
     btScalar mu,                  /* standard gravitational parameter */
-    const kostElements* elements, /* pointer to orbital elements at epoch */
+    const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
     btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
     btScalar timeSinceEpoch)      /* time since epoch in seconds */
@@ -168,7 +168,7 @@ namespace mKOST
 
   btScalar getArgPeAtTime (
     btScalar mu,                  /* standard gravitational parameter */
-    const kostElements* elements, /* pointer to orbital elements at epoch */
+    const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
     btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
     btScalar timeSinceEpoch)      /* time since epoch in seconds */
@@ -187,8 +187,8 @@ namespace mKOST
 
   int elements2StateVectorAtTime (
     btScalar mu,                  /* standard gravitational parameter */
-    const kostElements* elements, /* pointer to orbital elements at epoch */
-    kostStateVector* state,       /* pointer to location where state vectors at epoch+timeSinceEpoch will be stored */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    sStateVector* state,       /* pointer to location where state vectors at epoch+timeSinceEpoch will be stored */
     btScalar timeSinceEpoch,      /* time since epoch in seconds */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations,            /* max number of iterations for calculating eccentric anomaly */
@@ -205,7 +205,7 @@ namespace mKOST
 
     int ret;
     btScalar trueAnomaly;
-    kostElements updatedElements;
+    sElements updatedElements;
 
     /* get true anomaly */
     ret = getTrueAnomalyAtTime (mu, elements, &trueAnomaly, timeSinceEpoch, maxRelativeError, maxIterations);
@@ -221,8 +221,8 @@ namespace mKOST
 
   void getElementsAtTime (
     btScalar mu,                     /* standard gravitational parameter */
-    const kostElements* elements,    /* pointer to orbital elements at epoch */
-    kostElements* newElements,       /* pointer to location where elements at epoch+timeSinceEpoch will be stored */
+    const sElements* elements,    /* pointer to orbital elements at epoch */
+    sElements* newElements,       /* pointer to location where elements at epoch+timeSinceEpoch will be stored */
     btScalar timeSinceEpoch,         /* time since epoch in seconds */
     btScalar bodyRadius,             /* mean radius of the non-spherical body being orbited */
     btScalar jTwoCoeff)              /* J2 coefficient of the non-spherical body being orbited */

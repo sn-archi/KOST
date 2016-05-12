@@ -142,7 +142,7 @@ namespace mKOST
 {
   btScalar getMeanAnomaly (
     btScalar mu,                   /* standard gravitational parameter */
-    const kostElements* elements)   /* pointer to orbital elements at epoch */
+    const sElements* elements)   /* pointer to orbital elements at epoch */
   {
     btScalar meanAnomaly;
     /* calc mean anomaly */
@@ -159,7 +159,7 @@ namespace mKOST
   }
 
   int getEccentricAnomaly (
-    const kostElements* elements,      /* pointer to orbital elements at epoch */
+    const sElements* elements,      /* pointer to orbital elements at epoch */
     btScalar* eccentricAnomaly,        /* location where result will be stored */
     btScalar meanAnomaly,              /* mean anomaly */
     btScalar eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
@@ -233,7 +233,7 @@ namespace mKOST
 
   int getTrueAnomaly (
     btScalar mu,                  /* standard gravitational parameter */
-    const kostElements* elements, /* pointer to orbital elements at epoch */
+    const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar* trueAnomaly,        /* location where result will be stored */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
@@ -276,7 +276,7 @@ namespace mKOST
 
   btScalar getTrueAnomaly2 (
     btScalar mu,                  /* standard gravitational parameter */
-    const kostElements* elements, /* pointer to orbital elements at epoch */
+    const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar eccentricAnomaly)    /* eccentric anomaly */
   {
     btScalar ret;
@@ -295,8 +295,8 @@ namespace mKOST
 
   void elements2StateVector2 (
     btScalar mu,                  /* standard gravitational parameter */
-    const kostElements* elements, /* pointer to orbital elements at epoch */
-    kostStateVector* state,       /* pointer to location where state vector at epoch will be stored */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    sStateVector* state,       /* pointer to location where state vector at epoch will be stored */
     btScalar trueAnomaly)         /* true anomaly */
   {
     /* Pseudocode
@@ -339,7 +339,7 @@ namespace mKOST
     h = std::sin (elements->i) * h;
 
     /* elevation of h */
-    h.setZ (cos (elements->i) );
+    h.setY (std::cos (elements->i) );
     h.normalize() ;
 
     /* calc magnitude of h */
@@ -347,12 +347,12 @@ namespace mKOST
     if (e < 1.0)   /* elliptical orbit */
       {
         rPe = elements->a * (1.0 - e * e) / (1.0 + e);
-        vPe = sqrt (mu * (2.0 / rPe - 1.0 / elements->a) );
+        vPe = std::sqrt (mu * (2.0 / rPe - 1.0 / elements->a) );
       }
     else   /* hyperbolic orbit */
       {
         rPe = std::fabs (elements->a) * (e * e - 1.0) / (1.0 + e);
-        vPe = std::sqrt (mu * (2.0 / rPe + 1.0 / fabs (elements->a) ) );
+        vPe = std::sqrt (mu * (2.0 / rPe + 1.0 / std::fabs (elements->a) ) );
       }
     /* calc h */
     h = (rPe * vPe) * h;
@@ -373,9 +373,9 @@ namespace mKOST
 
     /* calc length of position vector */
     if (e < 1.0) /* elliptical orbit */
-      state->pos = elements->a * (1.0 - e * e) / (1.0 + e * cos (trueAnomaly) ) * state->pos;
+      state->pos = elements->a * (1.0 - e * e) / (1.0 + e * std::cos (trueAnomaly) ) * state->pos;
     else /* hyperbolic orbit */
-      state->pos = fabs (elements->a) * (e * e - 1.0) / (1.0 + e * cos (trueAnomaly) ) * state->pos;
+      state->pos = std::fabs (elements->a) * (e * e - 1.0) / (1.0 + e * std::cos (trueAnomaly) ) * state->pos;
 
     /* calc velocity vector */
     /*  calculate magnitude of velocity vector */
@@ -414,7 +414,7 @@ namespace mKOST
         if (v0_sq < 0.0) v0_sq = 0.0;
 
         vO = state->pos.normalized();
-        vO = (sqrt (v0_sq) * signSinTrueAnomaly) * vO;
+        vO = (std::sqrt (v0_sq) * signSinTrueAnomaly) * vO;
       }
 
     /* add to get velocity vector */
@@ -423,8 +423,8 @@ namespace mKOST
 
   int elements2StateVector (
     btScalar mu,                  /* standard gravitational parameter */
-    const kostElements* elements, /* pointer to orbital elements at epoch */
-    kostStateVector* state,       /* pointer to location where state vector will be stored */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    sStateVector* state,       /* pointer to location where state vector will be stored */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
   {
@@ -454,9 +454,9 @@ namespace mKOST
 
   void stateVector2Elements (
     btScalar mu,
-    const kostStateVector* state,
-    kostElements* elements,
-    kostOrbitParam* params)
+    const sStateVector* state,
+    sElements* elements,
+    sOrbitParam* params)
   {
     /*
     See appendix C in orbiter.pdf
@@ -469,7 +469,7 @@ namespace mKOST
 
     if (params == NULL)
       {
-        static kostOrbitParam dummy;
+        static sOrbitParam dummy;
         params = &dummy;
       }
 
@@ -576,11 +576,11 @@ namespace mKOST
         which is the angle between r and the
         equatorial plane.
         */
-        elements->i = std::asin (state->pos.getY() / absr);
+        elements->i = std::fmod (std::asin (state->pos.getY() / absr), M_PI);
       }
     else
       {
-        elements->i = std::acos (h.getY() / absh);
+        elements->i = std::fmod (std::acos (h.getY() / absh), M_PI);
       }
 
     /*LAN*/
@@ -649,7 +649,7 @@ namespace mKOST
           }
         else
           {
-            params->TrA = acos (tmp);
+            params->TrA = std::acos (tmp);
           }
 
         if (state->pos.dot (vel) < 0.0)

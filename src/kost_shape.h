@@ -44,7 +44,7 @@ namespace mKOST
   Output:
   shape
   */
-  void kostElements2Shape (const kostElements* elements, kostOrbitShape* shape);
+  void elements2Shape (const sElements* elements, sOrbitShape* shape);
 
 #ifdef __cplusplus
 }

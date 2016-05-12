@@ -48,7 +48,7 @@ namespace mKOST
   } kostMatrix3;
 #endif
 
-#ifndef kostElements
+#ifndef sElements
   typedef struct
   {
     btScalar a;      /*Semi-major axis*/
@@ -57,10 +57,10 @@ namespace mKOST
     btScalar theta;  /*Longitude of ascending node*/
     btScalar omegab; /*Longitude of periapsis*/
     btScalar L;      /*Mean longitude at epoch*/
-  } kostElements;
+  } sElements;
 #endif
 
-#ifndef kostOrbitParam
+#ifndef sOrbitParam
   typedef struct
   {
     /*Same as ORBITPARAM*/
@@ -79,14 +79,14 @@ namespace mKOST
 
     /*Additional*/
     btScalar AgP;  /*argument of periapsis*/
-  } kostOrbitParam;
+  } sOrbitParam;
 #endif // kostOrbitParam
 
   typedef struct
   {
     btVector3 pos;
     btVector3 vel;
-  } kostStateVector;
+  } sStateVector;
 
 
   typedef struct
@@ -96,7 +96,7 @@ namespace mKOST
     btVector3* points;
     unsigned int numPoints;
 
-  } kostOrbitShape;
+  } sOrbitShape;
 
 #ifdef __cplusplus
 }

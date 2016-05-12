@@ -9,13 +9,13 @@
 #define M 5.9736e24
 #define mu (KOST_GRAVITATIONAL_CONSTANT * M)
 
-mKOST::kostStateVector sv_maxVerror, sv_maxRerror;
+mKOST::sStateVector sv_maxVerror, sv_maxRerror;
 btScalar maxVerror = -1.0, maxRerror = -1.0;
 
-void testState (const mKOST::kostStateVector* sv)
+void testState (const mKOST::sStateVector* sv)
 {
-  mKOST::kostElements elements;
-  mKOST::kostStateVector out;
+  mKOST::sElements elements;
+  mKOST::sStateVector out;
   btVector3 diff;
   btScalar error;
 
@@ -63,7 +63,7 @@ void testState (const mKOST::kostStateVector* sv)
 int main (int argc, char* argv[])
 {
   int rx, ry, rz, vx, vy, vz;
-  mKOST::kostStateVector sv;
+  mKOST::sStateVector sv;
   int rmin = 5, rmax = 12, vmin = 0, vmax = 4;
 
   /*Arbitrary 6D positions*/

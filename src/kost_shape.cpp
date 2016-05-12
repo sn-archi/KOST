@@ -27,7 +27,7 @@
 
 namespace mKOST
 {
-  void kostElements2Shape (const kostElements* elements, kostOrbitShape* shape)
+  void elements2Shape (const sElements* elements, sOrbitShape* shape)
   {
     unsigned int i = 0;
 
