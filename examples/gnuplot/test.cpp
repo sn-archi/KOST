@@ -11,12 +11,12 @@ int main (int argc, char* argv[])
 {
   /*Data about central body (earth)*/
   double R = 6378100.0;
-  double M = 5.9736e24;
-  double mu = KOST_GRAVITATIONAL_CONSTANT * M;
+  double M = 5.97237e24;
+  double mu = 3.986004418e14;
 
-  mKOST::kostStateVector initial, state2;
-  mKOST::kostElements elements;
-  mKOST::kostOrbitParam params;
+  mKOST::sStateVector initial, state2;
+  mKOST::sElements elements;
+  mKOST::sOrbitParam params;
   double maxt;
 
   btVector3 output[N];
@@ -26,57 +26,37 @@ int main (int argc, char* argv[])
 
   /*Initial state at t=0*/
   initial.pos = btVector3 (R + 200000.0, 0.0, 0.0);
-  initial.vel = btVector3 (0.0, 10000.0, 0.0);
+  initial.vel = btVector3 (0.0, 0.0, 10000.0);
 
   /*Convert to orbital elements*/
   mKOST::stateVector2Elements (mu, &initial, &elements, &params);
 
   printf ("Orbital elements:\n"
-          "     a = %e\n"
-          "     e = %e\n"
-          "     i = %e\n"
-          " theta = %e\n"
-          "omegab = %e\n"
-          "     L = %e\n",
-          elements.a, elements.e, elements.i, elements.theta, elements.omegab, elements.L
+          "     a = %f m\n"
+          "     e = %f\n"
+          "     i = %f°\n"
+          " theta = %f°\n"
+          "omegab = %f°\n"
+          "     L = %f°\n",
+          elements.a, elements.e, elements.i*180/M_PI, elements.theta*180/M_PI, elements.omegab*180/M_PI, elements.L*180/M_PI
          );
 
   printf ("Additional parameters:\n"
-          "   PeD = %e\n"
-          "   ApD = %e\n"
-          "   MnA = %e\n"
-          "   TrA = %e\n"
-          "   EcA = %e\n"
-          "     T = %e\n"
-          "   AgP = %e\n",
+          "   PeD = %f m\n"
+          "   ApD = %f m\n"
+          "   MnA = %f°\n"
+          "   TrA = %f°\n"
+          "   EcA = %f°\n"
+          "     T = %f s\n"
+          "   AgP = %f°\n",
           params.PeD,
           params.ApD,
-          params.MnA,
-          params.TrA,
-          params.EcA,
+          params.MnA*180/M_PI,
+          params.TrA*180/M_PI,
+          params.EcA*180/M_PI,
           params.T,
           params.AgP
          );
-
-  /*
-  kostElements2StateVector(mu, &elements, &state2, KOST_VERYSMALL, 1000000);
-
-  printf("Returned state:\n"
-  	"     pos = %e, %e, %e\n"
-  	"     vel = %e, %e, %e\n",
-  	state2.pos.x, state2.pos.y, state2.pos.z,
-  	state2.vel.x, state2.vel.y, state2.vel.z
-  );
-
-  printf("Returned state error:\n"
-  	"     pos = %e, %e, %e\n"
-  	"     vel = %e, %e, %e\n",
-  	state2.pos.x - initial.pos.x, state2.pos.y - initial.pos.y, state2.pos.z - initial.pos.z,
-  	state2.vel.x - initial.vel.x, state2.vel.y - initial.vel.y, state2.vel.z - initial.vel.z
-  );
-
-  return 0;
-  */
 
   maxt = 1.0 * params.T;
 
@@ -84,7 +64,7 @@ int main (int argc, char* argv[])
     {
       double t = (i * maxt) / N;
 
-      mKOST::kostStateVector stateNow;
+      mKOST::sStateVector stateNow;
 
       mKOST::elements2StateVectorAtTime (mu, &elements, &stateNow, t, KOST_VERYSMALL, 20, 0.0, 0.0);
 
@@ -94,8 +74,10 @@ int main (int argc, char* argv[])
   {
     FILE* fp = fopen ("orbit.dat", "w");
 
+    // GNUPlot uses Y fr depth and Z for height. This'll make things looks as expected
+    // Just don't pay attention to the axix names.
     for (i = 0; i < N; i++)
-      fprintf (fp, "%f\t%f\t%f\n", output[i].getX(), output[i].getY(), output[i].getZ() );
+      fprintf (fp, "%f\t%f\t%f\n", output[i].getX(), output[i].getZ(), output[i].getY() );
 
     fclose (fp);
   }
