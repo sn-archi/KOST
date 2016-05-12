@@ -7,18 +7,22 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/Debug/mKOST" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Debug/mKOST" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
-				<Option type="1" />
+				<Option type="3" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-pg" />
 					<Add option="-g" />
 				</Compiler>
+				<Linker>
+					<Add option="-pg" />
+				</Linker>
 			</Target>
 			<Target title="Release">
-				<Option output="bin/Release/mKOST" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Release/mKOST" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
-				<Option type="1" />
+				<Option type="3" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
@@ -27,46 +31,112 @@
 					<Add option="-s" />
 				</Linker>
 			</Target>
+			<Target title="Accuracy">
+				<Option output="bin/Debug/test_accuracy" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-pg" />
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add option="-pg" />
+					<Add library="bin/Debug/libmKOST.so" />
+				</Linker>
+			</Target>
+			<Target title="GNUPlot">
+				<Option output="bin/Debug/kost_gnuplot" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-pg" />
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add option="-pg" />
+					<Add library="bin/Debug/libmKOST.so" />
+				</Linker>
+			</Target>
 		</Build>
+		<VirtualTargets>
+			<Add alias="Test" targets="Debug;Accuracy;GNUPlot;" />
+		</VirtualTargets>
 		<Compiler>
+			<Add option="-fPIC" />
+			<Add option="-std=c++14" />
+			<Add option="-Wextra" />
 			<Add option="-Wall" />
+			<Add option="-Wno-unused" />
 		</Compiler>
-		<Unit filename="examples/accuracy/test.c">
-			<Option compilerVar="CC" />
+		<Unit filename="examples/accuracy/test.cpp">
+			<Option target="Accuracy" />
 		</Unit>
-		<Unit filename="examples/gnuplot/test.c">
-			<Option compilerVar="CC" />
+		<Unit filename="examples/gnuplot/test.cpp">
+			<Option target="GNUPlot" />
 		</Unit>
-		<Unit filename="examples/gnuplot/test.plot" />
-		<Unit filename="src/kost.h" />
-		<Unit filename="src/kost_constants.h" />
-		<Unit filename="src/kost_elements.c">
-			<Option compilerVar="CC" />
+		<Unit filename="examples/gnuplot/test.plot">
+			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/kost_elements.h" />
-		<Unit filename="src/kost_linalg.c">
-			<Option compilerVar="CC" />
+		<Unit filename="src/kost.h">
+			<Option target="Debug" />
+			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_linalg.h" />
-		<Unit filename="src/kost_math.c">
-			<Option compilerVar="CC" />
+		<Unit filename="src/kost_constants.h">
+			<Option target="Debug" />
+			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_math.h" />
-		<Unit filename="src/kost_propagate.c">
-			<Option compilerVar="CC" />
+		<Unit filename="src/kost_elements.cpp">
+			<Option target="Debug" />
+			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_propagate.h" />
-		<Unit filename="src/kost_settings.h" />
-		<Unit filename="src/kost_shape.c">
-			<Option compilerVar="CC" />
+		<Unit filename="src/kost_elements.h">
+			<Option target="Debug" />
+			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_shape.h" />
-		<Unit filename="src/kost_types.h" />
-		<Unit filename="src/kostmm.h" />
+		<Unit filename="src/kost_linalg.cpp">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/kost_linalg.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/kost_propagate.cpp">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/kost_propagate.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/kost_settings.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/kost_shape.cpp">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/kost_shape.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/kost_types.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/kostmm.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
-			<lib_finder disable_auto="1" />
+			<lib_finder disable_auto="0">
+				<lib name="bullet" />
+			</lib_finder>
 			<debugger />
 		</Extensions>
 	</Project>

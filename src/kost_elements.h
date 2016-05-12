@@ -28,55 +28,57 @@ This header file contains orbital element tools
 
 #include "kost_types.h"
 
+namespace mKOST
+{
 #ifdef __cplusplus
-extern "C" {
+  extern "C" {
 #endif
 
-kostReal kostGetMeanAnomaly(
-	kostReal mu,                   /* standard gravitational parameter */
-	const kostElements *elements); /* pointer to orbital elements at epoch */
+  btScalar getMeanAnomaly (
+    btScalar mu,                   /* standard gravitational parameter */
+    const sElements* elements); /* pointer to orbital elements at epoch */
 
-int kostGetEccentricAnomaly(
-	const kostElements *elements,      /* pointer to orbital elements at epoch */
-	kostReal *eccentricAnomaly,        /* location where result will be stored */
-	kostReal meanAnomaly,              /* mean anomaly */
-	kostReal eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
-	kostReal maxRelativeError,         /* maximum relative error in eccentric anomaly */
-	int maxIterations);                /* max number of iterations for calculating eccentric anomaly */
+  int getEccentricAnomaly (
+    const sElements* elements,      /* pointer to orbital elements at epoch */
+    btScalar* eccentricAnomaly,        /* location where result will be stored */
+    btScalar meanAnomaly,              /* mean anomaly */
+    btScalar eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
+    btScalar maxRelativeError,         /* maximum relative error in eccentric anomaly */
+    int maxIterations);                /* max number of iterations for calculating eccentric anomaly */
 
-int kostGetTrueAnomaly(
-	kostReal mu,                  /* standard gravitational parameter */
-	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostReal *trueAnomaly,        /* location where result will be stored */
-	kostReal maxRelativeError,    /* maximum relative error in eccentric anomaly */
-	int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
+  int getTrueAnomaly (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    btScalar* trueAnomaly,        /* location where result will be stored */
+    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+    int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
 
-kostReal kostGetTrueAnomaly2(
-	kostReal mu,                  /* standard gravitational parameter */
-	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostReal eccentricAnomaly);   /* eccentric anomaly */
+  btScalar getTrueAnomaly2 (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    btScalar eccentricAnomaly);   /* eccentric anomaly */
 
-void kostElements2StateVector2(
-	kostReal mu,                  /* standard gravitational parameter */
-	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostStateVector *state,       /* pointer to location where state vector at epoch will be stored */
-	kostReal trueAnomaly);        /* true anomaly */
+  void elements2StateVector2 (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    sStateVector* state,       /* pointer to location where state vector at epoch will be stored */
+    btScalar trueAnomaly);        /* true anomaly */
 
-int kostElements2StateVector(
-	kostReal mu,                  /* standard gravitational parameter */
-	const kostElements *elements, /* pointer to orbital elements at epoch */
-	kostStateVector *state,       /* pointer to location where state vector will be stored */
-	kostReal maxRelativeError,    /* maximum relative error in eccentric anomaly */
-	int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
+  int elements2StateVector (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    sStateVector* state,       /* pointer to location where state vector will be stored */
+    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+    int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
 
-void kostStateVector2Elements(
-	kostReal mu,                  /* standard gravitational parameter */
-	const kostStateVector *state, /* pointer to state vector at epoch */
-	kostElements *elements,       /* pointer to location where orbital elements at epoch will be stored */
-	kostOrbitParam *params);      /* pointer to location where extra orbital parameters will be stored */
+  void stateVector2Elements (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sStateVector* state, /* pointer to state vector at epoch */
+    sElements* elements,       /* pointer to location where orbital elements at epoch will be stored */
+    sOrbitParam* params);      /* pointer to location where extra orbital parameters will be stored */
 
 #ifdef __cplusplus
 }
 #endif
-
+}
 #endif

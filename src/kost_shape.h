@@ -28,24 +28,26 @@ This header file contains orbital shape tools
 
 #include "kost_types.h"
 
+namespace mKOST
+{
 #ifdef __cplusplus
-extern "C" {
+  extern "C"
+  {
 #endif
 
-/*
-Input:
-elements
-shape->numPoints
-shape->points (should point to already allocated space)
+  /*
+  Input:
+  elements
+  shape->numPoints
+  shape->points (should point to already allocated space)
 
-Output:
-shape
-*/
-void kostElements2Shape(const kostElements *elements, kostOrbitShape *shape);
+  Output:
+  shape
+  */
+  void elements2Shape (const sElements* elements, sOrbitShape* shape);
 
 #ifdef __cplusplus
 }
 #endif
-
+}
 #endif
-

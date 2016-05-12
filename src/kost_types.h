@@ -27,90 +27,80 @@ This header defines the data types of KOST.
 #define KOST_TYPES_H
 
 #include "kost_settings.h"
+#include "LinearMath/btVector3.h"
+#include "LinearMath/btMatrix3x3.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifndef kostReal
-typedef double kostReal;
-#endif
-
-#ifndef kostVector3
-typedef struct
+namespace mKOST
 {
-
-	kostReal x, y, z;
-
-} kostVector3;
+#ifdef __cplusplus
+  extern "C" {
 #endif
 
 #ifndef kostMatrix3
-typedef struct
-{
+  typedef struct
+  {
 
-	kostReal
-		m11, m12, m13,
-		m21, m22, m23,
-		m31, m32, m33;
+    btScalar
+    m11, m12, m13,
+         m21, m22, m23,
+         m31, m32, m33;
 
-} kostMatrix3;
+  } kostMatrix3;
 #endif
 
-#ifndef kostElements
-typedef struct
-{
-	kostReal a;      /*Semi-major axis*/
-	kostReal e;      /*Eccentricity*/
-	kostReal i;      /*Inclination*/
-	kostReal theta;  /*Longitude of ascending node*/
-	kostReal omegab; /*Longitude of periapsis*/
-	kostReal L;      /*Mean longitude at epoch*/
-} kostElements;
+#ifndef sElements
+  typedef struct
+  {
+    btScalar a;      /*Semi-major axis*/
+    btScalar e;      /*Eccentricity*/
+    btScalar i;      /*Inclination*/
+    btScalar theta;  /*Longitude of ascending node*/
+    btScalar omegab; /*Longitude of periapsis*/
+    btScalar L;      /*Mean longitude at epoch*/
+  } sElements;
 #endif
 
-#ifndef kostOrbitParam
-typedef struct
-{
-	/*Same as ORBITPARAM*/
-	kostReal SMi;  /*semi-minor axis*/
-	kostReal PeD;  /*periapsis distance*/
-	kostReal ApD;  /*apoapsis distance*/
-	kostReal MnA;  /*mean anomaly*/
-	kostReal TrA;  /*true anomaly*/
-	kostReal MnL;  /*mean longitude*/
-	kostReal TrL;  /*true longitude*/
-	kostReal EcA;  /*eccentric anomaly*/
-	kostReal Lec;  /*linear eccentricity*/
-	kostReal T;    /*orbit period*/
-	kostReal PeT;  /*time to next periapsis passage*/
-	kostReal ApT;  /*time to next apoapsis passage*/
+#ifndef sOrbitParam
+  typedef struct
+  {
+    /*Same as ORBITPARAM*/
+    btScalar SMi;  /*semi-minor axis*/
+    btScalar PeD;  /*periapsis distance*/
+    btScalar ApD;  /*apoapsis distance*/
+    btScalar MnA;  /*mean anomaly*/
+    btScalar TrA;  /*true anomaly*/
+    btScalar MnL;  /*mean longitude*/
+    btScalar TrL;  /*true longitude*/
+    btScalar EcA;  /*eccentric anomaly*/
+    btScalar Lec;  /*linear eccentricity*/
+    btScalar T;    /*orbit period*/
+    btScalar PeT;  /*time to next periapsis passage*/
+    btScalar ApT;  /*time to next apoapsis passage*/
 
-	/*Additional*/
-	kostReal AgP;  /*argument of periapsis*/
-} kostOrbitParam;
-#endif
+    /*Additional*/
+    btScalar AgP;  /*argument of periapsis*/
+  } sOrbitParam;
+#endif // kostOrbitParam
 
-typedef struct
-{
-	kostVector3 pos;
-	kostVector3 vel;
-} kostStateVector;
+  typedef struct
+  {
+    btVector3 pos;
+    btVector3 vel;
+  } sStateVector;
 
 
-typedef struct
-{
-	kostVector3 pe, ap, dn, an;
+  typedef struct
+  {
+    btVector3 pe, ap, dn, an;
 
-	kostVector3 *points;
-	unsigned int numPoints;
+    btVector3* points;
+    unsigned int numPoints;
 
-} kostOrbitShape;
+  } sOrbitShape;
 
 #ifdef __cplusplus
 }
-#endif
-
-#endif
-
+#endif // __cplusplus
+}
+#endif // KOST_TYPES_H
 

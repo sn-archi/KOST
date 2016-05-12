@@ -29,3 +29,9 @@
 
 #project files
 *.layout
+*.depend
+*.dat
+kost_gnuplot
+test_accuracy
+ValgrindOut.xml
+test.plot

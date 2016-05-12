@@ -26,7 +26,7 @@ This header file contains some useful constants
 #ifndef KOST_CONSTANTS_H
 #define KOST_CONSTANTS_H
 
-#include <math.h>
+#include <cmath>
 
 /*From windows calculator:*/
 #ifndef M_PI

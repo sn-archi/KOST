@@ -31,49 +31,32 @@ This header file contains the linear algebra functions
 #ifdef __cplusplus
 extern "C" {
 #endif
+namespace mKOST
+{
+  /*TODO: other ones*/
 
-/*
-Vector operations:
-*/
-kostVector3 kostConstructv(kostReal x, kostReal y, kostReal z);
+  /*
+  Matrix operations:
+  */
 
-kostVector3 kostAddvv(const kostVector3 *v1, const kostVector3 *v2);
-kostVector3 kostSubvv(const kostVector3 *v1, const kostVector3 *v2);
+  void kostMakeUnitm (kostMatrix3* m);
+  void kostMakeXRotm (kostMatrix3* m, btScalar angle);
+  void kostMakeYRotm (kostMatrix3* m, btScalar angle);
+  void kostMakeZRotm (kostMatrix3* m, btScalar angle);
 
-kostVector3 kostMulrv(kostReal r, const kostVector3 *v);
+  void kostMakeTransposem (kostMatrix3* m);
 
-kostReal    kostDotProductvv(const kostVector3 *v1, const kostVector3 *v2);
-kostVector3 kostCrossProductvv(const kostVector3 *v1, const kostVector3 *v2);
+  btVector3 kostMulmv (const kostMatrix3* m, const btVector3* v);
 
-kostReal    kostAbsv(const kostVector3 *v);  /*Absolute value (length)*/
-kostReal    kostAbs2v(const kostVector3 *v); /*Square of absolute value (faster)*/
+  kostMatrix3 kostMulmm (const kostMatrix3* m1, const kostMatrix3* m2);
 
-kostVector3 kostNormalv(const kostVector3 *v); /*Normalized vector*/
-
-/*TODO: other ones*/
-
-/*
-Matrix operations:
-*/
-
-void kostMakeUnitm(kostMatrix3 *m);
-void kostMakeXRotm(kostMatrix3 *m, kostReal angle);
-void kostMakeYRotm(kostMatrix3 *m, kostReal angle);
-void kostMakeZRotm(kostMatrix3 *m, kostReal angle);
-
-void kostMakeTransposem(kostMatrix3 *m);
-
-kostVector3 kostMulmv(const kostMatrix3 *m, const kostVector3 *v);
-
-kostMatrix3 kostMulmm(const kostMatrix3 *m1, const kostMatrix3 *m2);
-
-/*TODO: other ones*/
+  /*TODO: other ones*/
 
 
 #ifdef __cplusplus
 }
 #endif
-
+}
 #endif
 
 

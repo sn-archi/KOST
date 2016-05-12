@@ -30,66 +30,33 @@ This header file defines a C++ API
 
 #include "kost_settings.h"
 
-
-#ifdef KOSTMM_LINALG_OPERATORS_VECTOR3
-
-inline kostVector3 operator+(const kostVector3 &v1, const kostVector3 &v2)
-	{return kostAddvv(&v1, &v2);}
-
-inline kostVector3 operator-(const kostVector3 &v1, const kostVector3 &v2)
-	{return kostSubvv(&v1, &v2);}
-
-inline kostVector3 operator*(const kostVector3 &v, kostReal r)
-	{return kostMulrv(r, &v);}
-
-#endif
-
-#ifndef dotProduct
-inline kostReal dotProduct(const kostVector3 &v1, const kostVector3 &v2)
-	{return kostDotProductvv(&v1, &v2);}
-#endif
-
-#ifndef crossProduct
-inline kostVector3 crossProduct(const kostVector3 &v1, const kostVector3 &v2)
-	{return kostCrossProductvv(&v1, &v2);}
-#endif
-
-#ifndef abs
-inline kostReal abs(const kostVector3 &v)
-	{return kostAbsv(&v);}
-#endif
-
-#ifndef abs2
-inline kostReal abs2(const kostVector3 &v)
-	{return kostAbs2v(&v);}
-#endif
-
-#ifndef normal
-inline kostVector3 normal(const kostVector3 &v)
-	{return kostNormalv(&v);}
-#endif
-
+namespace mKOST
+{
 #ifdef KOSTMM_LINALG_OPERATORS_MATRIX3
 
-inline kostMatrix3 operator*(const kostMatrix3 &m1, const kostMatrix3 &m2)
-	{return kostMulmm(&m1, &m2);}
+  inline kostMatrix3 operator* (const kostMatrix3 &m1, const kostMatrix3 &m2)
+  {
+    return kostMulmm (&m1, &m2);
+  }
 
-inline kostVector3 operator*(const kostMatrix3 &m, kostVector3 &v)
-	{return kostMulmv(&m, &v);}
+  inline btVector3 operator* (const kostMatrix3 &m, btVector3 &v)
+  {
+    return kostMulmv (&m, &v);
+  }
 
-inline kostVector3 &operator*=(kostVector3 &v, const kostMatrix3 &m)
-{
-	v = kostMulmv(&m, &v);
-	return v;
-}
+  inline btVector3 &operator*= (btVector3 &v, const kostMatrix3 &m)
+  {
+    v = kostMulmv (&m, &v);
+    return v;
+  }
 
 #endif
 
 #ifndef makeTranspose
-inline void makeTranspose(kostMatrix3 &m)
-	{kostMakeTransposem(&m);}
+  inline void makeTranspose (kostMatrix3 &m)
+  {
+    kostMakeTransposem (&m);
+  }
 #endif
-
+}
 #endif
-
-
