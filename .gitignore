@@ -33,4 +33,5 @@
 *.dat
 kost_gnuplot
 test_accuracy
-
+ValgrindOut.xml
+test.plot
