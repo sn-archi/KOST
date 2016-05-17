@@ -10,17 +10,18 @@
 #define mu (KOST_GRAVITATIONAL_CONSTANT * M)
 
 mKOST::sStateVector sv_maxVerror, sv_maxRerror;
-btScalar maxVerror = -0.1, maxRerror = -0.1;
+btScalar maxVerror = -1.0, maxRerror = -1.0;
 
 void testState (const mKOST::sStateVector* sv)
 {
   mKOST::sElements elements;
+  mKOST::sOrbitParam params;
   mKOST::sStateVector out;
   btVector3 diff;
   btScalar error;
 
   /*Convert to orbital elements*/
-  mKOST::stateVector2Elements (mu, sv, &elements, NULL);
+  mKOST::stateVector2Elements (mu, sv, &elements, &params);
 
   /*Convert back to state vector*/
   mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
@@ -36,11 +37,25 @@ void testState (const mKOST::sStateVector* sv)
               "     pos = %e, %e, %e\n"
               "     vel = %e, %e, %e\n"
               "     error = %f%%\n"
-              "     diff = %em\n",
+              "     diff = %em\n"
+              "     L = %e\n"
+              "     omegab = %e\n"
+              "     theta = %e\n"
+              "     EcA = %e\n"
+              "     AgP = %e\n"
+              "     TrA = %e\n"
+              "     MnA = %e\n",
               sv_maxRerror.pos.getX(), sv_maxRerror.pos.getY(), sv_maxRerror.pos.getZ(),
               sv_maxRerror.vel.getX(), sv_maxRerror.vel.getY(), sv_maxRerror.vel.getZ(),
               maxRerror,
-              diff.length()
+              diff.length(),
+              elements.L,
+              elements.omegab,
+              elements.theta,
+              params.EcA,
+              params.AgP,
+              params.TrA,
+              params.MnA
              );
     }
 
