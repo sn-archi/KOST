@@ -132,6 +132,7 @@ Added implementation of:
 #include <stdio.h>
 #include <stdlib.h>
 #include <cmath>
+#include <iostream>
 
 #include "kost_linalg.h"
 #include "kost_constants.h"
@@ -365,6 +366,7 @@ namespace mKOST
     calc direction of position vector:
     r/|r| = sin(ArgPos) * ((h / |h|) x n) + cos(argPos) * n
     */
+    //state->pos = std::sin(argPos) * (h.normalized().cross(n)) + std::cos(argPos) * n;
     tmpv = std::cos (argPos) * n;
     state->pos = h.normalized();
     state->pos = state->pos.cross (n);
@@ -396,6 +398,7 @@ namespace mKOST
     parallel:
     vO = sqrt(v^2 - |vPro|^2) * sign(sin(trueAnomaly)) * normal(pos)
     */
+    //vPro = (h.length()/state->pos.length()) * (h.cross(state->pos).normalized());
     vPro = h.cross (state->pos);
     vPro.normalize();
     vPro = (h.length() / state->pos.length() ) * vPro;
@@ -475,7 +478,7 @@ namespace mKOST
 
     vel = state->vel;
 
-    absr  = state->pos.length();
+    absr = state->pos.length();
 
     h = state->pos.cross (vel);
     absh = h.length();
@@ -496,7 +499,7 @@ namespace mKOST
         btScalar v_ortho_size;
 
         /* component of v parallel to pos */
-        v_parallel = (state->pos.dot (vel) / state->pos.length2() ) * state->pos;
+        v_parallel = (state->pos.dot (vel) / state->pos.length2()) * state->pos;
 
         /*
         Calculate how large the orthogonal component
@@ -505,12 +508,12 @@ namespace mKOST
 
         |v_ortho| = sqrt(epsilon*mu / |r|)
         */
-        v_ortho_size = sqrt (KOST_VERYSMALL * mu / absr);
+        v_ortho_size = std::sqrt (KOST_VERYSMALL * mu / absr);
 
         /* New orthogonal component */
         v_ortho = btVector3 (0.0, 1.0, 0.0);
         v_ortho = state->pos.cross (v_ortho);
-        v_ortho = (v_ortho_size / v_ortho.length() ) * v_ortho;
+        v_ortho = (v_ortho_size / v_ortho.length()) * v_ortho;
 
         /* replace the old orthogonal part */
         vel = v_parallel + v_ortho;
@@ -522,7 +525,7 @@ namespace mKOST
     n = btVector3 (-h.getZ(), h.getX(), 0.0);
     absn = n.length();
 
-    E = 0.5 * vel.length2() - mu / absr;
+    E = vel.length2() / 2 - mu / absr;
     if (E == 0.0)
       E = KOST_VERYSMALL;
 
@@ -530,6 +533,7 @@ namespace mKOST
     Alternative formula for e:
     e = (v x h) / mu - r / |r|
     */
+    //e = vel.cross (h) / mu - state->pos / absr;
     e = vel.cross (h);
     e = (absr / mu) * e;
     e = e - state->pos;
@@ -598,8 +602,8 @@ namespace mKOST
       }
     else
       {
-        elements->theta = std::acos (n.getX() / absn);
-        if (n.getZ() < 0.0) elements->theta = M_TWOPI - elements->theta;
+        elements->theta = std::acos (-n.getX() / absn);
+        if (n.getZ() > 0.0) elements->theta = M_TWOPI - elements->theta;
       }
 
     /*AgP*/
@@ -762,8 +766,7 @@ namespace mKOST
 
     fabs is for supporting hyperbola
     */
-    params->T =
-      M_TWOPI * std::sqrt (fabs (elements->a * elements->a * elements->a / mu) );
+    params->T = M_TWOPI * std::sqrt (std::fabs(std::pow(elements->a, 3) / mu));
 
     /*
     Calculating PeT and ApT:
