@@ -14,7 +14,7 @@ int main (int argc, char* argv[])
   double M = 5.97237e24;
   double mu = 3.986004418e14;
 
-  mKOST::sStateVector initial, state2;
+  mKOST::sStateVector initial, state2, out;
   mKOST::sElements elements;
   mKOST::sOrbitParam params;
   double maxt;
@@ -30,33 +30,54 @@ int main (int argc, char* argv[])
 
   /*Convert to orbital elements*/
   mKOST::stateVector2Elements (mu, &initial, &elements, &params);
+  mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
 
   printf ("Orbital elements:\n"
           "     a = %f m\n"
-          "     e = %f\n"
-          "     i = %f°\n"
-          " theta = %f°\n"
-          "omegab = %f°\n"
-          "     L = %f°\n",
-          elements.a, elements.e, elements.i*180/M_PI, elements.theta*180/M_PI, elements.omegab*180/M_PI, elements.L*180/M_PI
+          "     e = %e\n"
+          "     i = %f\n"
+          " theta = %f\n"
+          "omegab = %f\n"
+          "     L = %f\n",
+          elements.a, elements.e, elements.i, elements.theta, elements.omegab, elements.L
          );
 
   printf ("Additional parameters:\n"
           "   PeD = %f m\n"
           "   ApD = %f m\n"
-          "   MnA = %f°\n"
-          "   TrA = %f°\n"
-          "   EcA = %f°\n"
+          "   MnA = %f\n"
+          "   TrA = %f\n"
+          "   EcA = %f\n"
           "     T = %f s\n"
-          "   AgP = %f°\n",
+          "   AgP = %f\n",
           params.PeD,
           params.ApD,
-          params.MnA*180/M_PI,
-          params.TrA*180/M_PI,
-          params.EcA*180/M_PI,
+          params.MnA,
+          params.TrA,
+          params.EcA,
           params.T,
           params.AgP
          );
+  printf ("initial:\n"
+          "  position: %f, %f, %f\n"
+          "  velocity: %f, %f, %f\n",
+          initial.pos.getX(),
+          initial.pos.getY(),
+          initial.pos.getZ(),
+          initial.vel.getX(),
+          initial.vel.getY(),
+          initial.vel.getZ()
+          );
+  printf ("reversed:\n"
+          "  position: %f, %f, %f\n"
+          "  velocity: %f, %f, %f\n",
+          out.pos.getX(),
+          out.pos.getY(),
+          out.pos.getZ(),
+          out.vel.getX(),
+          out.vel.getY(),
+          out.vel.getZ()
+          );
 
   maxt = 1.0 * params.T;
 
