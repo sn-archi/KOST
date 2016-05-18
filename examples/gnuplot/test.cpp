@@ -14,7 +14,7 @@ int main (int argc, char* argv[])
   double M = 5.97237e24;
   double mu = 3.986004418e14;
 
-  mKOST::sStateVector initial, state2, out;
+  mKOST::sStateVector initial, out;
   mKOST::sElements elements;
   mKOST::sOrbitParam params;
   double maxt;
