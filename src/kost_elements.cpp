@@ -592,7 +592,7 @@ namespace mKOST
       }
     else
       {
-        elements->i = std::fmod (std::acos (h.getY() / absh), M_PI);
+        elements->i = std::acos (h.getY() / absh);
       }
 
     /*LAN*/
