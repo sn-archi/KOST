@@ -87,11 +87,11 @@ int main (int argc, char* argv[])
 
   /*Arbitrary 6D positions*/
   for (rx = rmin; rx <= rmax; rx++)
-    for (ry = rmin; ry <= rmax; ry++)
-      for (rz = rmin; rz <= rmax; rz++)
+    for (rz = -rmin; rz >= -rmax; rz--)
+      for (ry = rmin; ry <= rmax; ry++)
         for (vx = vmin; vx <= vmax; vx++)
-          for (vy = vmin; vy <= vmax; vy++)
-            for (vz = vmin; vz <= vmax; vz++)
+          for (vz = -vmin; vz >= -vmax; vz--)
+            for (vy = vmin; vy <= vmax; vy++)
               {
                 double rxf = std::pow (10.0, rx);
                 double ryf = std::pow (10.0, ry);
@@ -118,7 +118,6 @@ int main (int argc, char* argv[])
                               testState (&sv);
                             }
               }
-
   printf ("maxRerror = %e\n", maxRerror);
   printf ("maxVerror = %e\n", maxVerror);
 
