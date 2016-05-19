@@ -1,20 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cmath>
+#include <iostream>
 
 #include "../../src/kost.h"
 
 /*Number of output samples*/
-#define N 100
+#define N 1000
 
 int main (int argc, char* argv[])
 {
   /*Data about central body (earth)*/
   double R = 6378100.0;
-  double M = 5.97237e24;
   double mu = 3.986004418e14;
 
-  mKOST::sStateVector initial, out;
+  mKOST::sStateVector initial, out, out2;
   mKOST::sElements elements;
   mKOST::sOrbitParam params;
   double maxt;
@@ -22,15 +22,16 @@ int main (int argc, char* argv[])
   btVector3 output[N];
   unsigned int i = 0;
 
-  printf ("mu = %e\n", mu);
+  std::cout << std::endl << std::endl << std::endl;
 
   /*Initial state at t=0*/
-  initial.pos = btVector3 (R + 200000.0, 0.0, 0.0);
-  initial.vel = btVector3 (0.0, 0.0, 10000.0);
+  initial.pos = btVector3 (0.0, R, 0.0);
+  initial.vel = btVector3 (7750.0, 0.0, 0.0);
 
   /*Convert to orbital elements*/
   mKOST::stateVector2Elements (mu, &initial, &elements, &params);
   mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
+  mKOST::elements2StateVector2 (mu, &elements, &out2, M_PI);
 
   printf ("Orbital elements:\n"
           "     a = %f m\n"
@@ -77,6 +78,16 @@ int main (int argc, char* argv[])
           out.vel.getX(),
           out.vel.getY(),
           out.vel.getZ()
+          );
+  printf ("reversed:\n"
+          "  position: %f, %f, %f\n"
+          "  velocity: %f, %f, %f\n",
+          out2.pos.getX(),
+          out2.pos.getY(),
+          out2.pos.getZ(),
+          out2.vel.getX(),
+          out2.vel.getY(),
+          out2.vel.getZ()
           );
 
   maxt = 1.0 * params.T;

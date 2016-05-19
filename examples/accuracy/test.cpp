@@ -27,7 +27,7 @@ void testState (const mKOST::sStateVector* sv)
   mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
 
   diff = sv->pos - out.pos;
-  error = (diff.length() / sv->pos.length())*100;
+  error = (diff.length2() / sv->pos.length2())*100;
   if (error > maxRerror)
     {
       maxRerror = error;
@@ -36,19 +36,19 @@ void testState (const mKOST::sStateVector* sv)
       printf ("New pos error max:\n"
               "     pos = %e, %e, %e\n"
               "     vel = %e, %e, %e\n"
-              "     error = %f%%\n"
-              "     diff = %em\n"
+              "     error = %f%%\n",
+/*              "     diff = %em\n"
               "     L = %e\n"
               "     omegab = %e\n"
               "     theta = %e\n"
               "     EcA = %e\n"
               "     AgP = %e\n"
               "     TrA = %e\n"
-              "     MnA = %e\n",
+              "     MnA = %e\n",*/
               sv_maxRerror.pos.getX(), sv_maxRerror.pos.getY(), sv_maxRerror.pos.getZ(),
               sv_maxRerror.vel.getX(), sv_maxRerror.vel.getY(), sv_maxRerror.vel.getZ(),
-              maxRerror,
-              diff.length(),
+              maxRerror);
+/*              diff.length(),
               elements.L,
               elements.omegab,
               elements.theta,
@@ -56,11 +56,11 @@ void testState (const mKOST::sStateVector* sv)
               params.AgP,
               params.TrA,
               params.MnA
-             );
+             );*/
     }
 
   diff = sv->vel - out.vel;
-  error = (diff.length() / sv->vel.length())*100;
+  error = (diff.length2() / sv->vel.length2())*100;
   if (error > maxVerror)
     {
       maxVerror = error;
@@ -69,12 +69,10 @@ void testState (const mKOST::sStateVector* sv)
       printf ("New vel error max:\n"
               "     pos = %e, %e, %e\n"
               "     vel = %e, %e, %e\n"
-              "     error = %f%%\n"
-              "     diff = %em/s\n",
+              "     error = %f%%\n",
               sv_maxVerror.pos.getX(), sv_maxVerror.pos.getY(), sv_maxVerror.pos.getZ(),
               sv_maxVerror.vel.getX(), sv_maxVerror.vel.getY(), sv_maxVerror.vel.getZ(),
-              maxVerror,
-              diff.length()
+              maxVerror
              );
     }
 }
@@ -87,10 +85,10 @@ int main (int argc, char* argv[])
 
   /*Arbitrary 6D positions*/
   for (rx = rmin; rx <= rmax; rx++)
-    for (rz = -rmin; rz >= -rmax; rz--)
+    for (rz = rmin; rz <= rmax; rz++)
       for (ry = rmin; ry <= rmax; ry++)
         for (vx = vmin; vx <= vmax; vx++)
-          for (vz = -vmin; vz >= -vmax; vz--)
+          for (vz = vmin; vz <= vmax; vz++)
             for (vy = vmin; vy <= vmax; vy++)
               {
                 double rxf = std::pow (10.0, rx);
@@ -108,9 +106,9 @@ int main (int argc, char* argv[])
                         for (svy = -1; svy <= 1; svy++)
                           for (svz = -1; svz <= 1; svz++)
                             {
-                              if (srx == sry == srz == 0)
+                              if ((srx == 0) || (sry == 0) || (srz == 0))
                                 continue;
-                              if (svx == svy == svz == 0)
+                              if ((svx == 0) || (svy == 0) || (svz == 0))
                                 continue;
 
                               sv.pos = btVector3 (srx * rxf, sry * ryf, srz * rzf);

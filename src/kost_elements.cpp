@@ -602,7 +602,7 @@ namespace mKOST
       }
     else
       {
-        elements->theta = std::acos (-n.getX() / absn);
+        elements->theta = std::acos (n.getX() / absn);
         if (n.getZ() > 0.0) elements->theta = M_TWOPI - elements->theta;
       }
 

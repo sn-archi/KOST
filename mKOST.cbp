@@ -35,7 +35,6 @@
 				<Option output="bin/Debug/test_accuracy" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option use_console_runner="0" />
 				<Compiler>
 					<Add option="-pg" />
 					<Add option="-g" />
@@ -49,7 +48,19 @@
 				<Option output="bin/Debug/kost_gnuplot" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-pg" />
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add option="-pg" />
+					<Add library="bin/Debug/libmKOST.so" />
+				</Linker>
+			</Target>
+			<Target title="Quick test">
+				<Option output="bin/Debug/quick_test" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-pg" />
 					<Add option="-g" />
@@ -61,7 +72,7 @@
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="Test" targets="Debug;Accuracy;GNUPlot;" />
+			<Add alias="Test" targets="Debug;Accuracy;GNUPlot;Quick test;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-fPIC" />
@@ -78,6 +89,9 @@
 		</Unit>
 		<Unit filename="examples/gnuplot/test.plot">
 			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="examples/quick/test.cpp">
+			<Option target="Quick test" />
 		</Unit>
 		<Unit filename="src/kost.h">
 			<Option target="Debug" />
