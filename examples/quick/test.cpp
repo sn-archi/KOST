@@ -15,19 +15,15 @@ int main (int argc, char* argv[])
   mKOST::sElements elements, elements2;
   mKOST::sOrbitParam params;
 
-  unsigned int i = 0;
-
   std::cout << std::endl << std::endl << std::endl;
 
   /*Alternative test, with an initial param list at t0*/
-  elements.a = R;
-  elements.e = 0.5;
-  elements.i = 0.0;
-  //elements.L = M_PI * 1.5;
-  elements.L = 0.0;
-  //elements.omegab = M_PI / 2;
-  elements.omegab = 0.0;
-  elements.theta = M_PI;
+  elements.a = 6139129.926482;
+  elements.e = 3.892572e-01;
+  elements.i = M_PI / 4;
+  elements.omegab = M_PI / 2;
+  elements.theta = 0.0;
+  elements.L = M_PI / 2;
 
   /*Convert to orbital elements*/
   mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
@@ -36,7 +32,7 @@ int main (int argc, char* argv[])
 
   printf ("Orbital elements:\n"
           "     a = %f m\n"
-          "     e = %e\n"
+          "     e = %f\n"
           "     i = %f\n"
           " theta = %f\n"
           "omegab = %f\n"
@@ -46,7 +42,7 @@ int main (int argc, char* argv[])
 
   printf ("Orbital elements reversed:\n"
           "     a = %f m\n"
-          "     e = %e\n"
+          "     e = %f\n"
           "     i = %f\n"
           " theta = %f\n"
           "omegab = %f\n"
