@@ -540,7 +540,7 @@ namespace mKOST
         absh = h.length();
       }
 
-    n = btVector3 (-h.getZ(), h.getX(), 0.0);
+    n = btVector3 (h.getZ(), h.getX(), 0.0);
     absn = n.length();
 
     E = vel.length2() / 2 - mu / absr;
