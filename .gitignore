@@ -33,5 +33,7 @@
 *.dat
 kost_gnuplot
 test_accuracy
+quick_test
 ValgrindOut.xml
 test.plot
+CppCheckResults.xml
