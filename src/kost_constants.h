@@ -30,7 +30,7 @@ This header file contains some useful constants
 
 /*From windows calculator:*/
 #ifndef M_PI
-#define M_PI std::acos(0.0);
+#define M_PI 2 * std::acos(0.0);
 #endif
 
 #ifndef M_TWOPI
