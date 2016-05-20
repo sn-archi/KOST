@@ -26,7 +26,7 @@ void testState (const mKOST::sStateVector* sv)
   /*Convert back to state vector*/
   mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
 
-  diff = sv->pos - out.pos;
+/*  diff = sv->pos - out.pos;
   error = (diff.length2() / sv->pos.length2())*100;
   if (error > maxRerror)
     {
@@ -37,28 +37,11 @@ void testState (const mKOST::sStateVector* sv)
               "     pos = %e, %e, %e\n"
               "     vel = %e, %e, %e\n"
               "     error = %f%%\n",
-/*              "     diff = %em\n"
-              "     L = %e\n"
-              "     omegab = %e\n"
-              "     theta = %e\n"
-              "     EcA = %e\n"
-              "     AgP = %e\n"
-              "     TrA = %e\n"
-              "     MnA = %e\n",*/
               sv_maxRerror.pos.getX(), sv_maxRerror.pos.getY(), sv_maxRerror.pos.getZ(),
               sv_maxRerror.vel.getX(), sv_maxRerror.vel.getY(), sv_maxRerror.vel.getZ(),
               maxRerror);
-/*              diff.length(),
-              elements.L,
-              elements.omegab,
-              elements.theta,
-              params.EcA,
-              params.AgP,
-              params.TrA,
-              params.MnA
-             );*/
     }
-
+*/
   diff = sv->vel - out.vel;
   error = (diff.length2() / sv->vel.length2())*100;
   if (error > maxVerror)
@@ -69,9 +52,11 @@ void testState (const mKOST::sStateVector* sv)
       printf ("New vel error max:\n"
               "     pos = %e, %e, %e\n"
               "     vel = %e, %e, %e\n"
+              "     outvel = %e, %e, %e\n"
               "     error = %f%%\n",
               sv_maxVerror.pos.getX(), sv_maxVerror.pos.getY(), sv_maxVerror.pos.getZ(),
               sv_maxVerror.vel.getX(), sv_maxVerror.vel.getY(), sv_maxVerror.vel.getZ(),
+              out.vel.getX(), out.vel.getY(), out.vel.getZ(),
               maxVerror
              );
     }
