@@ -340,9 +340,9 @@ namespace mKOST
     sinI = btFuzzyZero(sinI)?0.0:sinI;
 
     btScalar cosTrueAnomaly = std::cos (trueAnomaly);
-    cosI = btFuzzyZero(cosTrueAnomaly)?0.0:cosTrueAnomaly;
+    cosTrueAnomaly = btFuzzyZero(cosTrueAnomaly)?0.0:cosTrueAnomaly;
     btScalar sinTrueAnomaly = std::sin (trueAnomaly);
-    sinI = btFuzzyZero(sinTrueAnomaly)?0.0:sinTrueAnomaly;
+    sinTrueAnomaly = btFuzzyZero(sinTrueAnomaly)?0.0:sinTrueAnomaly;
 
     /* calc nodal vector */
     n = btVector3 (cosTheta, 0.0, sinTheta);
@@ -631,7 +631,7 @@ namespace mKOST
       }
     else if (isEquatorial)
       {
-        params->AgP = atan2 (e.getZ(), e.getX() );
+        params->AgP = atan2 (e.getZ(), e.getX());
         if (h.getY() < 0.0) params->AgP = -params->AgP;
       }
     else
