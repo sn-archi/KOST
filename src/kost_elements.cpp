@@ -326,36 +326,23 @@ namespace mKOST
 
     e = elements->e;
     if (e == 1.0) /* parabolic orbit - approximate to hyperbolic orbit */
+    {
       e += KOST_VERYSMALL;
-
-    /* Fuzzyzero testing of sines and cosines */
-    btScalar cosTheta = std::cos (elements->theta);
-    cosTheta = btFuzzyZero(cosTheta)?0.0:cosTheta;
-    btScalar sinTheta = std::sin (elements->theta);
-    sinTheta = btFuzzyZero(sinTheta)?0.0:sinTheta;
-
-    btScalar cosI = std::cos (elements->i);
-    cosI = btFuzzyZero(cosI)?0.0:cosI;
-    btScalar sinI = std::sin (elements->i);
-    sinI = btFuzzyZero(sinI)?0.0:sinI;
-
-    btScalar cosTrueAnomaly = std::cos (trueAnomaly);
-    cosTrueAnomaly = btFuzzyZero(cosTrueAnomaly)?0.0:cosTrueAnomaly;
-    btScalar sinTrueAnomaly = std::sin (trueAnomaly);
-    sinTrueAnomaly = btFuzzyZero(sinTrueAnomaly)?0.0:sinTrueAnomaly;
+      printf("Fuck parabols ! never happens anyways\n");
+    }
 
     /* calc nodal vector */
-    n = btVector3 (cosTheta, 0.0, sinTheta);
+    n = btVector3 (std::cos(elements->theta), 0.0, std::sin(elements->theta));
 
     /* equatorial north vector */
     north = btVector3 (0.0, 1.0, 0.0);
     /* calc angular momentum vector, h */
     /* projection of h in ecliptic (xz) plane */
     h = n.cross (north);
-    h = sinI * h;
+    h = std::sin(elements->i) * h;
 
     /* elevation of h */
-    h.setY (cosI);
+    h.setY (std::cos(elements->i));
     h.normalize();
 
     /* calc magnitude of h */
@@ -381,22 +368,17 @@ namespace mKOST
     calc direction of position vector:
     r/|r| = sin(ArgPos) * ((h / |h|) x n) + cos(argPos) * n
     */
-    btScalar cosArgPos = std::cos (argPos);
-    cosArgPos = btFuzzyZero(cosArgPos)?0.0:cosArgPos;
-    btScalar sinArgPos = std::sin (argPos);
-    sinArgPos = btFuzzyZero(sinArgPos)?0.0:sinArgPos;
-
-    tmpv = cosArgPos * n;
+    tmpv = std::cos(argPos) * n;
     state->pos = h.normalized();
     state->pos = state->pos.cross (n);
-    state->pos = sinArgPos * state->pos;
+    state->pos = std::sin(argPos) * state->pos;
     state->pos = state->pos + tmpv;
 
     /* calc length of position vector */
-    if (e < 1.0) /* elliptical orbit */
-      state->pos = elements->a * (1.0 - e * e) / (1.0 + e * cosTrueAnomaly ) * state->pos;
-    else /* hyperbolic orbit */
-      state->pos = std::fabs (elements->a) * (e * e - 1.0) / (1.0 + e * cosTrueAnomaly ) * state->pos;
+    if (e < 1.0)                  /* elliptical orbit */
+      state->pos = elements->a * (1.0 - e * e) / (1.0 + e * std::cos(trueAnomaly)) * state->pos;
+    else                          /* hyperbolic orbit */
+      state->pos = std::fabs (elements->a) * (e * e - 1.0) / (1.0 + e * std::cos(trueAnomaly)) * state->pos;
 
     /* calc velocity vector */
     /* calculate magnitude of velocity vector */
@@ -421,7 +403,7 @@ namespace mKOST
     vPro.normalize();
     vPro = (h.length() / state->pos.length() ) * vPro;
 
-    tmpr = sinTrueAnomaly;
+    tmpr = std::sin(trueAnomaly);
     if (tmpr == 0.0)   /* check for apsis condition to avoid divide by zero */
       {
         vO = btVector3 (0.0, 0.0, 0.0);

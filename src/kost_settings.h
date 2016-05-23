@@ -67,7 +67,7 @@ It should generally be as small as possible, but
 (KOST_VERYSMALL + 1.0) - 1.0 should be sufficiently accurate
 when evaluated in the kostReal type.
 */
-#define KOST_VERYSMALL 1e-12
+#define KOST_VERYSMALL 1e-15
 
 
 /*

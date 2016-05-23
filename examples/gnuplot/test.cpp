@@ -5,17 +5,17 @@
 
 #include "../../src/kost.h"
 
-/*Number of output samples*/
-#define N 1000
+/* Number of output samples */
+#define N 500
+
+/* Central body params */
+#define R 6378100.0
+#define mu 3.986004418e14
 
 int main (int argc, char* argv[])
 {
-  /*Data about central body (earth)*/
-  double R = 6378100.0;
-  double mu = 3.986004418e14;
-
-  mKOST::sStateVector initial, out, out2;
-  mKOST::sElements elements;
+  mKOST::sStateVector initial, out;
+  mKOST::sElements elements, elements2;
   mKOST::sOrbitParam params;
   double maxt;
 
@@ -25,17 +25,17 @@ int main (int argc, char* argv[])
   std::cout << std::endl << std::endl << std::endl;
 
   /*Initial state at t=0*/
-  initial.pos = btVector3 (0.0, R, 0.0);
-  initial.vel = btVector3 (7750.0, 0.0, 0.0);
+  initial.pos = btVector3 (-1.0e8, -1.0e5, 1.0e5);
+  initial.vel = btVector3 (1000.0, 1.0, -1.0);
 
   /*Convert to orbital elements*/
   mKOST::stateVector2Elements (mu, &initial, &elements, &params);
   mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
-  mKOST::elements2StateVector2 (mu, &elements, &out2, M_PI);
+  mKOST::stateVector2Elements (mu, &out, &elements2, &params);
 
   printf ("Orbital elements:\n"
           "     a = %f m\n"
-          "     e = %e\n"
+          "     e = %f\n"
           "     i = %f\n"
           " theta = %f\n"
           "omegab = %f\n"
@@ -79,16 +79,6 @@ int main (int argc, char* argv[])
           out.vel.getY(),
           out.vel.getZ()
           );
-  printf ("reversed:\n"
-          "  position: %f, %f, %f\n"
-          "  velocity: %f, %f, %f\n",
-          out2.pos.getX(),
-          out2.pos.getY(),
-          out2.pos.getZ(),
-          out2.vel.getX(),
-          out2.vel.getY(),
-          out2.vel.getZ()
-          );
 
   maxt = 1.0 * params.T;
 
@@ -98,7 +88,7 @@ int main (int argc, char* argv[])
 
       mKOST::sStateVector stateNow;
 
-      mKOST::elements2StateVectorAtTime (mu, &elements, &stateNow, t, KOST_VERYSMALL, 20, 0.0, 0.0);
+      mKOST::elements2StateVectorAtTime (mu, &elements, &stateNow, t, KOST_VERYSMALL, 1000, 0.0, 0.0);
 
       output[i] = stateNow.pos;
     }
