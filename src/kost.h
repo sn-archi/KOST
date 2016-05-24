@@ -36,11 +36,6 @@ KOST is the Kepler Orbital Simulation Toolkit.
 #include "kost_propagate.h"
 #include "kost_shape.h"
 
-/* C++ interface */
-#ifdef __cplusplus
-#include "kostmm.h"
-#endif
-
 #endif
 
 

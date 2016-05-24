@@ -141,10 +141,6 @@
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kostmm.h">
-			<Option target="Debug" />
-			<Option target="Release" />
-		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
