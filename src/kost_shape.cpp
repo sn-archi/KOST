@@ -116,24 +116,24 @@ namespace mKOST
     Then: rotate the coordinates:
     */
     {
-      kostMatrix3 AgPMat, LANMat, IncMat, transform;
+      btMatrix3x3 AgPMat, LANMat, IncMat, transform;
 
-      kostMakeZRotm (&AgPMat, AgP);
-      kostMakeXRotm (&IncMat, elements->i);
-      kostMakeZRotm (&LANMat, elements->theta);
+      AgPMat.setEulerZYX (0.0, AgP, 0.0);
+      IncMat.setEulerZYX (elements->i, 0.0, 0.0);
+      LANMat.setEulerZYX (0.0, elements->theta, 0.0);
 
       /* Now, global = LANMat * IncMat * AgPMat * local: */
-      transform = kostMulmm (&LANMat, &IncMat);
-      transform = kostMulmm (&transform, &AgPMat);
+      transform = LANMat * IncMat;
+      transform *= AgPMat;
 
-      shape->pe = kostMulmv (&transform, & (shape->pe) );
-      shape->ap = kostMulmv (&transform, & (shape->ap) );
-      shape->an = kostMulmv (&transform, & (shape->an) );
-      shape->dn = kostMulmv (&transform, & (shape->dn) );
+      shape->pe = transform * shape->pe;
+      shape->ap = transform * shape->ap;
+      shape->an = transform * shape->an;
+      shape->dn = transform * shape->dn;
 
       if (shape->numPoints != 0)
         for (i = 0; i < shape->numPoints; i++)
-          shape->points[i] = kostMulmv (&transform, & (shape->points[i]) );
+          shape->points[i] = transform * shape->points[i];
     }
   }
 }
