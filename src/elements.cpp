@@ -134,10 +134,7 @@ Added implementation of:
 #include <cmath>
 #include <iostream>
 
-#include "kost_linalg.h"
-#include "kost_constants.h"
-
-#include "kost_elements.h"
+#include "elements.h"
 
 namespace mKOST
 {
@@ -151,9 +148,9 @@ namespace mKOST
 
     if (elements->e < 1.0)
       {
-        /* check range is in 0 to 2*pi */
-        if (meanAnomaly < 0.0) meanAnomaly += M_TWOPI;
-        if (meanAnomaly >  M_TWOPI) meanAnomaly -= M_TWOPI;
+        /* check range is in 0 to 2π */
+        if (meanAnomaly < 0.0) meanAnomaly += SIMD_2_PI;
+        if (meanAnomaly >  SIMD_2_PI) meanAnomaly -= SIMD_2_PI;
       }
 
     return meanAnomaly;
@@ -189,7 +186,7 @@ namespace mKOST
       }
 
     if (elements->e == 1.0) /* parabolic orbit - approximate to hyperbolic */
-      e = elements->e + KOST_VERYSMALL;
+      e = elements->e + SIMD_EPSILON;
     else
       e = elements->e;
 
@@ -218,10 +215,10 @@ namespace mKOST
 
     if (elements->e < 1.0)
       {
-        /* check range is in 0 to 2*pi */
-        eccentricAnomalyEstimate = fmod (eccentricAnomalyEstimate, M_TWOPI);
-        if (eccentricAnomalyEstimate < 0.0) eccentricAnomalyEstimate += M_TWOPI;
-        if (eccentricAnomalyEstimate > M_TWOPI) eccentricAnomalyEstimate -= M_TWOPI;
+        /* check range is in 0 to 2π */
+        eccentricAnomalyEstimate = fmod (eccentricAnomalyEstimate, SIMD_2_PI);
+        if (eccentricAnomalyEstimate < 0.0) eccentricAnomalyEstimate += SIMD_2_PI;
+        if (eccentricAnomalyEstimate > SIMD_2_PI) eccentricAnomalyEstimate -= SIMD_2_PI;
       }
 
     *eccentricAnomaly = eccentricAnomalyEstimate;
@@ -234,7 +231,7 @@ namespace mKOST
 
   int getTrueAnomaly (
     btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
+    const sElements* elements,    /* pointer to orbital elements at epoch */
     btScalar* trueAnomaly,        /* location where result will be stored */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
@@ -327,7 +324,7 @@ namespace mKOST
     e = elements->e;
     if (e == 1.0) /* parabolic orbit - approximate to hyperbolic orbit */
     {
-      e += KOST_VERYSMALL;
+      e += SIMD_EPSILON;
       printf("Fuck parabols ! never happens anyways\n");
     }
 
@@ -397,7 +394,7 @@ namespace mKOST
     vPro = (|h|/|pos|) * normal(h x pos)
 
     parallel:
-    vO = sqrt(v^2 - |vPro|^2) * sign(sin(trueAnomaly)) * normal(pos)
+    vO = √(v² - |vPro|²) * sign(sin(trueAnomaly)) * normal(pos)
     */
     vPro = h.cross (state->pos);
     vPro.normalize();
@@ -426,8 +423,8 @@ namespace mKOST
 
   int elements2StateVector (
     btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    sStateVector* state,       /* pointer to location where state vector will be stored */
+    const sElements* elements,    /* pointer to orbital elements at epoch */
+    sStateVector* state,          /* pointer to location where state vector will be stored */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
   {
@@ -461,9 +458,6 @@ namespace mKOST
     sElements* elements,
     sOrbitParam* params)
   {
-    /*
-    See appendix C in orbiter.pdf
-    */
 
     btVector3 vel, h, n, e;
     btScalar absh, absn, absr, abse, E, tPe;
@@ -486,9 +480,9 @@ namespace mKOST
     /*
     Radial orbits are not supported.
     e is not significantly different from 1.0
-    if |h| < sqrt(epsilon * mu * |r|)
+    if |h| < √(ε x µ x |r|)
     */
-    if (absh * absh < KOST_VERYSMALL * mu * absr)
+    if (absh * absh < SIMD_EPSILON * mu * absr)
       {
         /*
         We assume that the position is non-zero.
@@ -506,9 +500,9 @@ namespace mKOST
         should be to make e significantly different
         from 1.0:
 
-        |v_ortho| = sqrt(epsilon*mu / |r|)
+        |v_ortho| = √(ε x μ / |r|)
         */
-        v_ortho_size = std::sqrt (KOST_VERYSMALL * mu / absr);
+        v_ortho_size = std::sqrt (SIMD_EPSILON * mu / absr);
 
         /* New orthogonal component */
         v_ortho = btVector3 (0.0, 1.0, 0.0);
@@ -527,11 +521,11 @@ namespace mKOST
 
     E = vel.length2() / 2 - mu / absr;
     if (E == 0.0)
-      E = KOST_VERYSMALL;
+      E = SIMD_EPSILON;
 
     /*
     Alternative formula for e:
-    e = (v x h) / mu - r / |r|
+    e = (v x h) / μ - r / |r|
     */
     e = vel.cross (h);
     e = (absr / mu) * e;
@@ -541,20 +535,20 @@ namespace mKOST
     abse = e.length();
 
     /* parabolic orbit are not supported */
-    if (abse > 1.0 - KOST_VERYSMALL && abse < 1.0 + KOST_VERYSMALL)
+    if (abse > 1.0 - SIMD_EPSILON && abse < 1.0 + SIMD_EPSILON)
       {
         if (E >= 0.0)
           {
-            abse = 1.0 + KOST_VERYSMALL; /* Approximate with hyperbolic */
+            abse = 1.0 + SIMD_EPSILON; /* Approximate with hyperbolic */
           }
         else
           {
-            abse = 1.0 - KOST_VERYSMALL; /* Approximate with elliptic */
+            abse = 1.0 - SIMD_EPSILON; /* Approximate with elliptic */
           }
       }
 
-    isEquatorial = absn < KOST_VERYSMALL;
-    isCircular   = abse < KOST_VERYSMALL;
+    isEquatorial = absn < SIMD_EPSILON;
+    isCircular   = abse < SIMD_EPSILON;
     isHyperbola  = abse >= 1.0;
 
     /*Ecc*/
@@ -562,8 +556,8 @@ namespace mKOST
 
     /*
       SMa
-      dp = a * (1-e)
-      da = a * (1+e)
+      dp = a(1 - e)
+      da = a(1 + e)
     */
     if (isHyperbola)
       {
@@ -587,7 +581,7 @@ namespace mKOST
         which is the angle between r and the
         equatorial plane.
         */
-        elements->i = std::fmod (std::asin (state->pos.getY() / absr), M_PI);
+        elements->i = std::fmod (std::asin (state->pos.getY() / absr), SIMD_PI);
       }
     else
       {
@@ -602,7 +596,7 @@ namespace mKOST
     else
       {
         elements->theta = std::acos (n.getX() / absn);
-        if (n.getZ() > 0.0) elements->theta = M_TWOPI - elements->theta;
+        if (n.getZ() > 0.0) elements->theta = SIMD_2_PI - elements->theta;
       }
 
     /*AgP*/
@@ -619,7 +613,7 @@ namespace mKOST
     else
       {
         params->AgP = std::acos (n.dot (e) / (absn * abse));
-        if (e.getY() < 0.0) params->AgP = M_TWOPI - params->AgP;
+        if (e.getY() < 0.0) params->AgP = SIMD_2_PI - params->AgP;
       }
 
     /*TrA*/
@@ -632,7 +626,7 @@ namespace mKOST
             if (vel.getX() > 0.0)
               {
                 sin_TrA_isNegative = true;
-                params->TrA = M_TWOPI - params->TrA;
+                params->TrA = SIMD_2_PI - params->TrA;
               }
           }
         else
@@ -641,7 +635,7 @@ namespace mKOST
             if (n.dot (vel) > 0.0)
               {
                 sin_TrA_isNegative = true;
-                params->TrA = M_TWOPI - params->TrA;
+                params->TrA = SIMD_2_PI - params->TrA;
               }
           }
       }
@@ -652,7 +646,7 @@ namespace mKOST
         /*Avoid acos out of range:*/
         if (tmp <= -1.0)
           {
-            params->TrA = M_PI;
+            params->TrA = SIMD_PI;
           }
         else if (tmp >= 1.0)
           {
@@ -666,7 +660,7 @@ namespace mKOST
         if (state->pos.dot (vel) < 0.0)
           {
             sin_TrA_isNegative = true;
-            params->TrA = M_TWOPI - params->TrA;
+            params->TrA = SIMD_2_PI - params->TrA;
           }
       }
 
@@ -675,7 +669,7 @@ namespace mKOST
 
     /*
     SMi
-    b^2 = a^2 * (1 - e^2)
+    b² = a²(1 - e²)
     */
     if (isHyperbola)
       {
@@ -689,7 +683,7 @@ namespace mKOST
       }
 
     /*LPe*/
-    elements->omegab = std::fmod (elements->theta + params->AgP, M_TWOPI);
+    elements->omegab = std::fmod (elements->theta + params->AgP, SIMD_2_PI);
 
     /*EcA*/
     if (isHyperbola)
@@ -717,7 +711,7 @@ namespace mKOST
         /*Avoid acos out of range:*/
         if (tmp <= -1.0)
           {
-            params->EcA = M_PI;
+            params->EcA = SIMD_PI;
           }
         else if (tmp >= 1.0)
           {
@@ -737,9 +731,9 @@ namespace mKOST
       }
     else
       {
-        /*Same rule basically, but with EcA in 0..2pi range*/
+        /*Same rule basically, but with EcA in 0..2π range*/
         if (sin_TrA_isNegative)
-          params->EcA = M_TWOPI - params->EcA;
+          params->EcA = SIMD_2_PI - params->EcA;
       }
 
     /*MnA*/
@@ -755,22 +749,22 @@ namespace mKOST
     /*MnL*/
     elements->L = params->MnA + elements->omegab;
     if (!isHyperbola)
-      elements->L = std::fmod (elements->L, M_TWOPI);
+      elements->L = std::fmod (elements->L, SIMD_2_PI);
 
     /*TrL*/
-    params->TrL = std::fmod (elements->omegab + params->TrA, M_TWOPI);
+    params->TrL = std::fmod (elements->omegab + params->TrA, SIMD_2_PI);
 
     /*
-    T = 2*pi*sqrt(a^3 / mu)
+    T = 2π√(a³/μ)
 
     fabs is for supporting hyperbola
     */
-    params->T = M_TWOPI * std::sqrt (std::fabs(std::pow(elements->a, 3) / mu));
+    params->T = SIMD_2_PI * std::sqrt (std::fabs(std::pow(elements->a, 3) / mu));
 
     /*
     Calculating PeT and ApT:
     */
-    tPe = params->MnA * params->T / M_TWOPI; /*Time since last Pe*/
+    tPe = params->MnA * params->T / SIMD_2_PI; /*Time since last Pe*/
 
     if (isHyperbola)
       {

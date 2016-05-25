@@ -19,22 +19,35 @@
  ***************************************************************************/
 
 /*
-KOST is the Kepler Orbital Simulation Toolkit.
+KOST is the Kepler Orbit Simulation Toolkit.
+This header file contains orbital shape tools
 */
 
-#ifndef KOST_H
-#define KOST_H
+#ifndef SHAPE_H
+#define SHAPE_H
 
-/* Data types */
-#include "kost_types.h"
+#include "types.h"
 
-#include "kost_constants.h"
-
-/* Different modules */
-#include "kost_elements.h"
-#include "kost_propagate.h"
-#include "kost_shape.h"
-
+namespace mKOST
+{
+#ifdef __cplusplus
+  extern "C"
+  {
 #endif
 
+  /*
+  Input:
+  elements
+  shape->numPoints
+  shape->points (should point to already allocated space)
 
+  Output:
+  shape
+  */
+  void elements2Shape (const sElements* elements, sOrbitShape* shape);
+
+#ifdef __cplusplus
+}
+#endif
+}
+#endif // SHAPE_H

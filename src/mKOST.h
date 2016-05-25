@@ -19,37 +19,20 @@
  ***************************************************************************/
 
 /*
-KOST is the Kepler Orbit Simulation Toolkit.
-This header file contains some useful constants
+KOST is the Kepler Orbital Simulation Toolkit.
 */
 
-#ifndef KOST_CONSTANTS_H
-#define KOST_CONSTANTS_H
+#ifndef MKOST_H
+#define MKOST_H
 
-#include <cmath>
+/* Data types */
+#include "types.h"
 
-/*From windows calculator:*/
-#ifndef M_PI
-#define M_PI 2 * std::acos(0.0);
-#endif
+/* Different modules */
+#include "elements.h"
+#include "propagate.h"
+#include "shape.h"
 
-#ifndef M_TWOPI
-#define M_TWOPI         (M_PI * 2.0)
-#endif
-
-/*From orbiter.pdf:*/
-#define KOST_GRAVITATIONAL_CONSTANT (6.67259e-11)
-#define KOST_ASTRONOMICAL_UNIT (1.49597870691e11)
-
-/* Found this in SpeedCrunch (http://www.speedcrunch.org) */
-#define KOST_PARSEC (3.08567802e16)
-
-/* Calibrated on Orbiter (probably not exactly right): */
-/*This is a mean solar day: */
-#define KOST_DAY (86400.0)
-
-#define KOST_YEAR (365.25 * KOST_DAY)
-
-#endif
+#endif // MKOST_H
 
 

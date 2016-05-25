@@ -20,10 +20,7 @@
 
 #include <cmath>
 
-#include "kost_constants.h"
-#include "kost_linalg.h"
-
-#include "kost_shape.h"
+#include "shape.h"
 
 namespace mKOST
 {
@@ -53,7 +50,7 @@ namespace mKOST
         btScalar maxTrA, dTrA, TrA;
 
         /*Range of angles*/
-        maxTrA = M_PI;
+        maxTrA = SIMD_PI;
         if (elements->e >= 1.0)
           {
             maxTrA = std::acos (-1.0 / elements->e);
@@ -96,7 +93,7 @@ namespace mKOST
 
     /*DN*/
     {
-      btScalar TrA = M_PI - AgP;
+      btScalar TrA = SIMD_PI - AgP;
       btScalar absr = multiplier / (1.0 + elements->e * std::cos (TrA) );
 
       if (absr <= 0.0)

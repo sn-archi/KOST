@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "../../src/kost.h"
+#include "../../src/mKOST.h"
 
 /* Number of output samples */
 #define N 500
@@ -30,7 +30,7 @@ int main (int argc, char* argv[])
 
   /*Convert to orbital elements*/
   mKOST::stateVector2Elements (mu, &initial, &elements, &params);
-  mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
+  mKOST::elements2StateVector (mu, &elements, &out, SIMD_EPSILON, 1000000);
   mKOST::stateVector2Elements (mu, &out, &elements2, &params);
 
   printf ("Orbital elements:\n"
@@ -88,7 +88,7 @@ int main (int argc, char* argv[])
 
       mKOST::sStateVector stateNow;
 
-      mKOST::elements2StateVectorAtTime (mu, &elements, &stateNow, t, KOST_VERYSMALL, 1000, 0.0, 0.0);
+      mKOST::elements2StateVectorAtTime (mu, &elements, &stateNow, t, SIMD_EPSILON, 1000, 0.0, 0.0);
 
       output[i] = stateNow.pos;
     }
