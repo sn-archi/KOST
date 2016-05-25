@@ -23,10 +23,10 @@ KOST is the Kepler Orbit Simulation Toolkit.
 This header defines the data types of KOST.
 */
 
-#ifndef KOST_TYPES_H
-#define KOST_TYPES_H
+#ifndef TYPES_H
+#define TYPES_H
 
-#include "kost_settings.h"
+#include "LinearMath/btScalar.h"
 #include "LinearMath/btVector3.h"
 #include "LinearMath/btMatrix3x3.h"
 
@@ -34,18 +34,6 @@ namespace mKOST
 {
 #ifdef __cplusplus
   extern "C" {
-#endif
-
-#ifndef kostMatrix3
-  typedef struct
-  {
-
-    btScalar
-    m11, m12, m13,
-         m21, m22, m23,
-         m31, m32, m33;
-
-  } kostMatrix3;
 #endif
 
 #ifndef sElements
@@ -102,5 +90,5 @@ namespace mKOST
 }
 #endif // __cplusplus
 }
-#endif // KOST_TYPES_H
+#endif // TYPES_H
 

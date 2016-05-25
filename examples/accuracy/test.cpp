@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <cmath>
 
-#include "../../src/kost.h"
+#include "../../src/mKOST.h"
 
 /*Data about central body (earth)*/
 #define R 6378100.0
@@ -23,7 +23,7 @@ void testState (const mKOST::sStateVector* sv)
   mKOST::stateVector2Elements (mu, sv, &elements, NULL);
 
   /*Convert back to state vector*/
-  mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000);
+  mKOST::elements2StateVector (mu, &elements, &out, SIMD_EPSILON, 1000000);
 
   diff = sv->pos - out.pos;
   error = (diff.length() / sv->pos.length());

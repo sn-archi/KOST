@@ -81,11 +81,9 @@ Renamed several functions
 #include <stdlib.h>
 #include <cmath>
 
-#include "kost_linalg.h"
-#include "kost_constants.h"
-#include "kost_elements.h"
+#include "elements.h"
 
-#include "kost_propagate.h"
+#include "propagate.h"
 
 namespace mKOST
 {
@@ -110,9 +108,9 @@ namespace mKOST
 
     /* calc mean anomaly */
     /* fmod takes care of overflow in the case where the mean anomaly exceeds one revolution */
-    meanAnomaly = std::fmod (elements->L - elements->omegab + deltaMeanAnomaly, M_TWOPI);
+    meanAnomaly = std::fmod (elements->L - elements->omegab + deltaMeanAnomaly, SIMD_2_PI);
 
-    if (meanAnomaly < 0) meanAnomaly += M_TWOPI;
+    if (meanAnomaly < 0) meanAnomaly += SIMD_2_PI;
 
     return meanAnomaly;
   }
@@ -232,7 +230,7 @@ namespace mKOST
     /* Mean longitude: */
     newElements->L = getMeanAnomalyAtTime (mu, newElements, timeSinceEpoch) + newElements->omegab;
 
-    if (bodyRadius > KOST_VERYSMALL)
+    if (bodyRadius > SIMD_EPSILON)
       {
         /* longitude of ascending node */
         newElements->theta =

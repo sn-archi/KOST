@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "../../src/kost.h"
+#include "../../src/mKOST.h"
 
 int main (int argc, char* argv[])
 {
@@ -20,13 +20,13 @@ int main (int argc, char* argv[])
   /*Alternative test, with an initial param list at t0*/
   elements.a = 6139129.926482;
   elements.e = 3.892572e-01;
-  elements.i = M_PI / 4;
-  elements.omegab = M_PI / 2;
+  elements.i = SIMD_PI / 4;
+  elements.omegab = SIMD_HALF_PI;
   elements.theta = 0.0;
-  elements.L = M_PI / 2;
+  elements.L = SIMD_HALF_PI;
 
   /*Convert to orbital elements*/
-  mKOST::elements2StateVector (mu, &elements, &out, KOST_VERYSMALL, 1000000);
+  mKOST::elements2StateVector (mu, &elements, &out, SIMD_EPSILON, 1000000);
   mKOST::stateVector2Elements (mu, &out, &elements2, &params);
 
 

@@ -93,43 +93,35 @@
 		<Unit filename="examples/quick/test.cpp">
 			<Option target="Quick test" />
 		</Unit>
-		<Unit filename="src/kost.h">
+		<Unit filename="src/elements.cpp">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_constants.h">
+		<Unit filename="src/elements.h">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_elements.cpp">
+		<Unit filename="src/mKOST.h">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_elements.h">
+		<Unit filename="src/propagate.cpp">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_propagate.cpp">
+		<Unit filename="src/propagate.h">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_propagate.h">
+		<Unit filename="src/shape.cpp">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_settings.h">
+		<Unit filename="src/shape.h">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
-		<Unit filename="src/kost_shape.cpp">
-			<Option target="Debug" />
-			<Option target="Release" />
-		</Unit>
-		<Unit filename="src/kost_shape.h">
-			<Option target="Debug" />
-			<Option target="Release" />
-		</Unit>
-		<Unit filename="src/kost_types.h">
+		<Unit filename="src/types.h">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
