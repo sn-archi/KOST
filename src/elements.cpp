@@ -643,7 +643,7 @@ namespace mKOST
       {
         btScalar tmp = e.dot (state->pos) / (abse * absr);
 
-        /*Avoid acos out of range:*/
+        /* Avoid acos out of range. 1 and -1 are included cause we now the result. */
         if (tmp <= -1.0)
           {
             params->TrA = SIMD_PI;
@@ -657,7 +657,8 @@ namespace mKOST
             params->TrA = std::acos (tmp);
           }
 
-        if (state->pos.dot (vel) < 0.0)
+        /* Changing sin_TrA_isNegative on a negative epsilon value doesn't seem right */
+        if (state->pos.dot (vel) + SIMD_EPSILON < 0.0)
           {
             sin_TrA_isNegative = true;
             params->TrA = SIMD_2_PI - params->TrA;
@@ -708,7 +709,7 @@ namespace mKOST
       {
         btScalar tmp = (1.0 - absr / elements->a) / elements->e;
 
-        /*Avoid acos out of range:*/
+        /* Avoid acos out of range. 1 and -1 are included cause we now the result. */
         if (tmp <= -1.0)
           {
             params->EcA = SIMD_PI;
