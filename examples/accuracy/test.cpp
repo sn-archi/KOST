@@ -73,12 +73,12 @@ int main (int argc, char* argv[])
   int counter = 0;
 
   /*Arbitrary 6D positions*/
-  for (rx = rmin; rx <= rmax; rx++)
-    for (rz = rmin; rz <= rmax; rz++)
-      for (ry = rmin; ry <= rmax; ry++)
-        for (vx = vmin; vx <= vmax; vx++)
-          for (vz = vmin; vz <= vmax; vz++)
-            for (vy = vmin; vy <= vmax; vy++)
+  for (rx = rmin; rx <= rmax; ++rx)
+    for (rz = rmin; rz <= rmax; ++rz)
+      for (ry = rmin; ry <= rmax; ++ry)
+        for (vx = vmin; vx <= vmax; ++vx)
+          for (vz = vmin; vz <= vmax; ++vz)
+            for (vy = vmin; vy <= vmax; ++vy)
               {
                 double rxf = std::pow (10.0, rx);
                 double ryf = std::pow (10.0, ry);
@@ -88,12 +88,12 @@ int main (int argc, char* argv[])
                 double vzf = std::pow (10.0, vz);
 
                 int srx, sry, srz, svx, svy, svz;
-                for (srx = -1; srx <= 1; srx++)
-                  for (sry = -1; sry <= 1; sry++)
-                    for (srz = -1; srz <= 1; srz++)
-                      for (svx = -1; svx <= 1; svx++)
-                        for (svy = -1; svy <= 1; svy++)
-                          for (svz = -1; svz <= 1; svz++)
+                for (srx = -1; srx <= 1; ++srx)
+                  for (sry = -1; sry <= 1; ++sry)
+                    for (srz = -1; srz <= 1; ++srz)
+                      for (svx = -1; svx <= 1; ++svx)
+                        for (svy = -1; svy <= 1; ++svy)
+                          for (svz = -1; svz <= 1; ++svz)
                             {
                               if ((srx == 0) || (sry == 0) || (srz == 0))
                                 continue;

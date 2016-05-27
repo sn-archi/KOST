@@ -209,7 +209,7 @@ namespace mKOST
           }
         /* calculate relativeError */
         relativeError = 1.0 - meanAnomalyEstimate / meanAnomaly;
-        i++;
+        ++i;
       }
     while ( (i < maxIterations) && (fabs (relativeError) > fabs (maxRelativeError) ) );
 
@@ -310,40 +310,31 @@ namespace mKOST
      * calc components of velocity vector perpendicular and parallel to radius vector
      * add to get velocity vector */
 
-    btVector3 n; /* unit vector in direction of ascending node */
-    btVector3 h; /* angular momentum vector */
-    btVector3 north; /* unit vector pointing ecliptic north */
-    btVector3 vPro, vO; /* prograde and outward components of velocity vector */
-    btVector3 tmpv; /* temporary vector value */
-    btScalar argPos; /* argument of position, measured from the longitude of ascending node */
-    btScalar rPe, vPe; /* radius and velocity at periapsis */
-    btScalar v2; /* magnitude squared of velocity vector */
-    btScalar e; /* eccentricity */
-    btScalar tmpr; /* temporary real value */
-
-    e = elements->e;
+    /* eccentricity */
+    btScalar e (elements->e);
     if (e == 1.0) /* parabolic orbit - approximate to hyperbolic orbit */
     {
       e += SIMD_EPSILON;
       printf("Fuck parabols ! never happens anyways\n");
     }
 
-    /* calc nodal vector */
-    n = btVector3 (std::cos(elements->theta), 0.0, std::sin(elements->theta));
+    /* unit vector in direction of ascending node */
+    btVector3 n (btVector3 (std::cos(elements->theta), 0.0, std::sin(elements->theta)));
 
-    /* equatorial north vector */
-    north = btVector3 (0.0, 1.0, 0.0);
+    /* unit vector pointing ecliptic north */
+    btVector3 north (btVector3 (0.0, 1.0, 0.0));
+
     /* calc angular momentum vector, h */
     /* projection of h in ecliptic (xz) plane */
-    h = n.cross (north);
-    h = std::sin(elements->i) * h;
-
+    btVector3 h (n.cross (north));
+    h *= std::sin(elements->i);
     /* elevation of h */
     h.setY (std::cos(elements->i));
     h.normalize();
-
     /* calc magnitude of h */
+
     /* calc radius and velocity at periapsis */
+    btScalar rPe, vPe;
     if (e < 1.0)   /* elliptical orbit */
       {
         rPe = elements->a * (1.0 - e * e) / (1.0 + e);
@@ -355,21 +346,22 @@ namespace mKOST
         vPe = std::sqrt (mu * (2.0 / rPe + 1.0 / std::fabs (elements->a) ) );
       }
     /* calc h */
-    h = (rPe * vPe) * h;
+    h *= rPe * vPe;
 
     /* calc position vector */
-    /* calc argument of position */
-    argPos = elements->omegab - elements->theta + trueAnomaly;
+    /* argument of position, measured from the longitude of ascending node */
+    btScalar argPos (elements->omegab - elements->theta + trueAnomaly);
 
     /*
     calc direction of position vector:
     r/|r| = sin(ArgPos) * ((h / |h|) x n) + cos(argPos) * n
     */
-    tmpv = std::cos(argPos) * n;
-    state->pos = h.normalized();
-    state->pos = state->pos.cross (n);
-    state->pos = std::sin(argPos) * state->pos;
-    state->pos = state->pos + tmpv;
+    state->pos = std::sin(argPos) * h.normalized().cross(n) + std::cos(argPos) * n;
+    //btVector3 tmpv (std::cos(argPos) * n);
+    //state->pos = h.normalized();
+    //state->pos = state->pos.cross (n);
+    //state->pos *= std::sin(argPos);
+    //state->pos += tmpv;
 
     /* calc length of position vector */
     if (e < 1.0)                  /* elliptical orbit */
@@ -378,7 +370,8 @@ namespace mKOST
       state->pos = std::fabs (elements->a) * (e * e - 1.0) / (1.0 + e * std::cos(trueAnomaly)) * state->pos;
 
     /* calc velocity vector */
-    /* calculate magnitude of velocity vector */
+    /* calculate squared magnitude of velocity vector */
+    btScalar v2;
     if (e < 1.0)   /* elliptical orbit */
       {
         v2 = mu * (2.0 / state->pos.length() - 1.0 / elements->a);
@@ -396,25 +389,27 @@ namespace mKOST
     parallel:
     vO = √(v² - |vPro|²) * sign(sin(trueAnomaly)) * normal(pos)
     */
-    vPro = h.cross (state->pos);
-    vPro.normalize();
-    vPro = (h.length() / state->pos.length() ) * vPro;
+    btVector3 vPro (h.length() / state->pos.length() * h.cross (state->pos).normalized());
+    //btVector3 vPro (h.cross (state->pos));
+    //vPro.normalize();
+    //vPro *= h.length() / state->pos.length();
 
-    tmpr = std::sin(trueAnomaly);
+    btScalar tmpr (std::sin(trueAnomaly));
+    btVector3 vO;
     if (tmpr == 0.0)   /* check for apsis condition to avoid divide by zero */
       {
         vO = btVector3 (0.0, 0.0, 0.0);
       }
     else
       {
-        btScalar signSinTrueAnomaly = tmpr / std::fabs (tmpr);
+        btScalar signSinTrueAnomaly (tmpr / std::fabs (tmpr));
 
-        btScalar v0_sq = v2 - vPro.length2();
+        btScalar v0_sq (v2 - vPro.length2());
         /* check for small negative numbers resulting from rounding */
         if (v0_sq < 0.0) v0_sq = 0.0;
 
         vO = state->pos.normalized();
-        vO = (std::sqrt (v0_sq) * signSinTrueAnomaly) * vO;
+        vO *= (std::sqrt (v0_sq) * signSinTrueAnomaly);
       }
 
     /* add to get velocity vector */
@@ -440,11 +435,9 @@ namespace mKOST
      * get longitude of ascending node and argument of periapsis
      * calc state vectors */
 
-    int ret;
-    btScalar trueAnomaly;
-
     /* get true anomaly */
-    ret = getTrueAnomaly (mu, elements, &trueAnomaly, maxRelativeError, maxIterations);
+    btScalar trueAnomaly;
+    int ret (getTrueAnomaly (mu, elements, &trueAnomaly, maxRelativeError, maxIterations));
 
     /* calc state vectors */
     elements2StateVector2 (mu, elements, state, trueAnomaly);
@@ -458,24 +451,18 @@ namespace mKOST
     sElements* elements,
     sOrbitParam* params)
   {
-
-    btVector3 vel, h, n, e;
-    btScalar absh, absn, absr, abse, E, tPe;
-    bool isEquatorial, isCircular, isHyperbola;
-    bool sin_TrA_isNegative = false;
-
     if (params == NULL)
       {
         static sOrbitParam dummy;
         params = &dummy;
       }
 
-    vel = state->vel;
+    btVector3 vel (state->vel);
 
-    absr = state->pos.length();
+    btScalar absr (state->pos.length());
 
-    h = state->pos.cross (vel);
-    absh = h.length();
+    btVector3 h (state->pos.cross (vel));
+    btScalar absh (h.length());
 
     /*
     Radial orbits are not supported.
@@ -489,11 +476,9 @@ namespace mKOST
         Otherwise, we are in a singularity anyway,
         and no formula will get us out of there.
         */
-        btVector3 v_ortho, v_parallel;
-        btScalar v_ortho_size;
 
         /* component of v parallel to pos */
-        v_parallel = (state->pos.dot (vel) / state->pos.length2()) * state->pos;
+        btVector3 v_parallel ((state->pos.dot (vel) / state->pos.length2()) * state->pos);
 
         /*
         Calculate how large the orthogonal component
@@ -502,10 +487,10 @@ namespace mKOST
 
         |v_ortho| = √(ε x μ / |r|)
         */
-        v_ortho_size = std::sqrt (SIMD_EPSILON * mu / absr);
+        btScalar v_ortho_size (std::sqrt (SIMD_EPSILON * mu / absr));
 
         /* New orthogonal component */
-        v_ortho = btVector3 (0.0, 1.0, 0.0);
+        btVector3 v_ortho = btVector3 (0.0, 1.0, 0.0);
         v_ortho = state->pos.cross (v_ortho);
         v_ortho = (v_ortho_size / v_ortho.length()) * v_ortho;
 
@@ -516,10 +501,10 @@ namespace mKOST
         absh = h.length();
       }
 
-    n = btVector3 (h.getZ(), h.getX(), 0.0);
-    absn = n.length();
+    btVector3 n = btVector3 (h.getZ(), h.getX(), 0.0);
+    btScalar absn (n.length());
 
-    E = vel.length2() / 2 - mu / absr;
+    btScalar E (vel.length2() / 2 - mu / absr);
     if (E == 0.0)
       E = SIMD_EPSILON;
 
@@ -527,12 +512,12 @@ namespace mKOST
     Alternative formula for e:
     e = (v x h) / μ - r / |r|
     */
-    e = vel.cross (h);
-    e = (absr / mu) * e;
-    e = e - state->pos;
-    e = (1.0 / absr) * e;
+    btVector3 e (vel.cross (h));
+    e *= absr / mu;
+    e -= state->pos;
+    e *= 1.0 / absr;
 
-    abse = e.length();
+    btScalar abse (e.length());
 
     /* parabolic orbit are not supported */
     if (abse > 1.0 - SIMD_EPSILON && abse < 1.0 + SIMD_EPSILON)
@@ -547,9 +532,9 @@ namespace mKOST
           }
       }
 
-    isEquatorial = absn < SIMD_EPSILON;
-    isCircular   = abse < SIMD_EPSILON;
-    isHyperbola  = abse >= 1.0;
+    bool isEquatorial (absn < SIMD_EPSILON);
+    bool isCircular (abse < SIMD_EPSILON);
+    bool isHyperbola (abse >= 1.0);
 
     /*Ecc*/
     elements->e = abse;
@@ -617,7 +602,7 @@ namespace mKOST
       }
 
     /*TrA*/
-    sin_TrA_isNegative = false;
+    bool sin_TrA_isNegative (false);
     if (isCircular)
       {
         if (isEquatorial)
@@ -765,7 +750,7 @@ namespace mKOST
     /*
     Calculating PeT and ApT:
     */
-    tPe = params->MnA * params->T / SIMD_2_PI; /*Time since last Pe*/
+    btScalar tPe (params->MnA * params->T / SIMD_2_PI); /*Time since last Pe*/
 
     if (isHyperbola)
       {
