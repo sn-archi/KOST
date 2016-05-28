@@ -176,7 +176,7 @@ namespace mKOST
      * while ((iterations<=maxIterations)&&(relativeError<maxRelativeError))
      * if iterations<=maxIterations return iterations, else return 0 */
 
-    int i;
+    int i (0);
     btScalar relativeError, meanAnomalyEstimate, e;
 
     if (elements->e == 0.0)   /* circular orbit */
@@ -190,22 +190,21 @@ namespace mKOST
     else
       e = elements->e;
 
-    i = 0;
     do
       {
         if (elements->e < 1.0)   /* elliptical orbit */
           {
             /* calculate next estimate of the root of Kepler's equation using Newton's method */
-            eccentricAnomalyEstimate = eccentricAnomalyEstimate - (eccentricAnomalyEstimate - e * sin (eccentricAnomalyEstimate) - meanAnomaly) / (1 - e * cos (eccentricAnomalyEstimate) );
+            eccentricAnomalyEstimate = eccentricAnomalyEstimate - (eccentricAnomalyEstimate - e * std::sin (eccentricAnomalyEstimate) - meanAnomaly) / (1.0 - e * std::cos (eccentricAnomalyEstimate) );
             /* calculate estimate of mean anomaly from estimate of eccentric anomaly */
-            meanAnomalyEstimate = eccentricAnomalyEstimate - e * sin (eccentricAnomalyEstimate);
+            meanAnomalyEstimate = eccentricAnomalyEstimate - e * std::sin (eccentricAnomalyEstimate);
           }
         else   /* hyperbolic orbit */
           {
             /* calculate next estimate of the root of Kepler's equation using Newton's method */
-            eccentricAnomalyEstimate = eccentricAnomalyEstimate - (e * sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate - meanAnomaly) / (e * cosh (eccentricAnomalyEstimate) - 1.0);
+            eccentricAnomalyEstimate = eccentricAnomalyEstimate - (e * std::sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate - meanAnomaly) / (e * std::cosh (eccentricAnomalyEstimate) - 1.0);
             /* calculate estimate of mean anomaly from estimate of eccentric anomaly */
-            meanAnomalyEstimate = e * sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate;
+            meanAnomalyEstimate = e * std::sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate;
           }
         /* calculate relativeError */
         relativeError = 1.0 - meanAnomalyEstimate / meanAnomaly;
@@ -262,7 +261,7 @@ namespace mKOST
       {
         ret = getEccentricAnomaly (
                 elements, &eccentricAnomaly,
-                meanAnomaly, log (2.0 * meanAnomaly / elements->e + 1.8),
+                meanAnomaly, std::log (2.0 * meanAnomaly / elements->e + 1.8),
                 maxRelativeError, maxIterations);
       }
 
@@ -501,7 +500,7 @@ namespace mKOST
         absh = h.length();
       }
 
-    btVector3 n = btVector3 (h.getZ(), h.getX(), 0.0);
+    btVector3 n = btVector3 (h.getZ(), 0.0, -h.getX());
     btScalar absn (n.length());
 
     btScalar E (vel.length2() / 2 - mu / absr);
