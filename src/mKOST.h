@@ -33,6 +33,10 @@ KOST is the Kepler Orbital Simulation Toolkit.
 #include "propagate.h"
 #include "shape.h"
 
+/*Data about central body (earth)*/
+#define R 6378100.0
+#define MU 3.986004418e14
+
 #endif // MKOST_H
 
 

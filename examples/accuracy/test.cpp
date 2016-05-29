@@ -4,11 +4,6 @@
 
 #include "../../src/mKOST.h"
 
-/*Data about central body (earth)*/
-#define R 6378100.0
-#define mu 3.986004418e14
-
-
 mKOST::sStateVector sv_maxVerror, sv_maxRerror;
 btScalar maxVerror = -1.0, maxRerror = -1.0;
 
@@ -18,17 +13,18 @@ void testState (const mKOST::sStateVector* sv)
   mKOST::sStateVector out;
   btVector3 diff;
   btScalar error;
+  int ret;
 
   /*Convert to orbital elements*/
-  mKOST::stateVector2Elements (mu, sv, &elements, NULL);
+  mKOST::stateVector2Elements (MU, sv, &elements, NULL);
 
   /*Convert back to state vector*/
-  mKOST::elements2StateVector (mu, &elements, &out, SIMD_EPSILON, 1000000);
+  ret = mKOST::elements2StateVector (MU, &elements, &out, 1.0e-3, 1000000);
 
   diff = sv->pos - out.pos;
   error = (diff.length() / sv->pos.length());
-  //if (error > maxRerror && btFuzzyZero(elements.e - 1.0))
-  if (error > maxRerror)
+
+  if (error > maxRerror && ret != 0)
     {
       maxRerror = error;
       sv_maxRerror = *sv;
@@ -46,8 +42,8 @@ void testState (const mKOST::sStateVector* sv)
 
   diff = sv->vel - out.vel;
   error = (diff.length() / sv->vel.length());
-  //if (error > maxVerror && btFuzzyZero(elements.e - 1.0))
-  if (error > maxVerror)
+
+  if (error > maxVerror && ret != 0)
     {
       maxVerror = error;
       sv_maxVerror = *sv;
