@@ -279,11 +279,11 @@ namespace mKOST
     btScalar ret;
     if (elements->e < 1.0)   /* elliptical orbit */
       {
-        ret = 2.0 * atan (sqrt ( (1.0 + elements->e) / (1.0 - elements->e) ) * tan (eccentricAnomaly / 2.0) );
+        ret = 2.0 * std::atan (std::sqrt ( (1.0 + elements->e) / (1.0 - elements->e) ) * std::tan (eccentricAnomaly / 2.0) );
       }
     else   /* hyperbolic orbit */
       {
-        ret = acos ( (cosh (eccentricAnomaly) - elements->e) / (1 - elements->e * cosh (eccentricAnomaly) ) );
+        ret = std::acos ( (std::cosh (eccentricAnomaly) - elements->e) / (1 - elements->e * std::cosh (eccentricAnomaly) ) );
         if (eccentricAnomaly < 0.0) ret = -ret; /* Always the same sign */
       }
 
@@ -627,7 +627,7 @@ namespace mKOST
       {
         btScalar tmp = e.dot (state->pos) / (abse * absr);
 
-        /* Avoid acos out of range. 1 and -1 are included cause we now the result. */
+        /* Avoid acos out of range. 1 and -1 are included cause we know the result. */
         if (tmp <= -1.0)
           {
             params->TrA = SIMD_PI;
