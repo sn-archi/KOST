@@ -115,18 +115,18 @@ Added implementation of:
  *
  * Position as a function of time can be found by either:
  *
- * 1. A call to kostElements2StateVector1. Depending on settings for
+ * 1. A call to mKOST::elements2StateVector1. Depending on settings for
  *    maxIterations and maxRelativeError, this may adversly affect frame
  *    rates in graphical applications.
  *
  * 2. To minimise impact on frame rates:
- *    2.1. Call kostGetMeanAnomaly
- *    2.2. Call kostGetEccentricAnomaly on successive time steps with a
+ *    2.1. Call mKOST::getMeanAnomaly
+ *    2.2. Call mKOST::getEccentricAnomaly on successive time steps with a
  *         small number of iterations in each call. Each call takes the
  *         result of the previous call as its eccentricAnomalyEstimate.
  *         Repeat until kostGetEccentricAnomaly returns > 0.
- *    2.3. Call kostGetTrueAnomaly2.
- *    2.4. Call kostElements2StateVector2.
+ *    2.3. Call mKOST::getTrueAnomaly2.
+ *    2.4. Call mKOST::elements2StateVector2.
  **************************************************************************/
 
 #include <stdio.h>
@@ -156,7 +156,7 @@ namespace mKOST
 
   btVector3 getn(btScalar LaN)
   {
-    return btVector3 (std::cos (LaN), 0.0, std::sin (LaN));
+    return btVector3 (std::cos (LaN), 0.0, -std::sin (LaN));
   }
 
   btScalar getLaN(btVector3 n)
@@ -342,7 +342,7 @@ namespace mKOST
       }
   }
 
-  btScalar getTrAFromState(btVector3 pos, btVector3 vel, btVector3 n, btVector3 e, bool isCircular, bool isEquatorial)
+  btScalar getTrAFromState(btVector3 pos, btVector3 vel, btVector3 n, btVector3 e, bool isCircular, bool isEquatorial, bool* sin_TrA_isNegative)
   {
     btScalar TrA (0.0);
     if (isCircular)
@@ -352,6 +352,7 @@ namespace mKOST
         TrA = std::acos (pos.getX() / pos.length());
         if (vel.getX() > 0.0)
         {
+          *sin_TrA_isNegative = true;
           TrA = SIMD_2_PI - TrA;
         }
       }
@@ -360,6 +361,7 @@ namespace mKOST
         TrA = std::acos (n.dot (pos) ) / (n.length() * pos.length());
         if (n.dot (vel) > 0.0)
         {
+          *sin_TrA_isNegative = true;
           TrA = SIMD_2_PI - TrA;
         }
       }
@@ -385,6 +387,7 @@ namespace mKOST
       /* Changing sin_TrA_isNegative on a negative epsilon value doesn't seem right */
       if (pos.dot (vel) + SIMD_EPSILON < 0.0)
       {
+        *sin_TrA_isNegative = true;
         TrA = SIMD_2_PI - TrA;
       }
     }
@@ -671,52 +674,7 @@ namespace mKOST
 
     /*TrA*/
     bool sin_TrA_isNegative (false);
-    if (isCircular)
-      {
-        if (isEquatorial)
-          {
-            params->TrA = std::acos (state->pos.getX() / state->pos.length());
-            if (vel.getX() > 0.0)
-              {
-                sin_TrA_isNegative = true;
-                params->TrA = SIMD_2_PI - params->TrA;
-              }
-          }
-        else
-          {
-            params->TrA = std::acos (n.dot (state->pos) ) / (n.length() * state->pos.length());
-            if (n.dot (vel) > 0.0)
-              {
-                sin_TrA_isNegative = true;
-                params->TrA = SIMD_2_PI - params->TrA;
-              }
-          }
-      }
-    else
-      {
-        btScalar tmp = e.dot (state->pos) / (abse * state->pos.length());
-
-        /* Avoid acos out of range. 1 and -1 are included cause we know the result. */
-        if (tmp <= -1.0)
-          {
-            params->TrA = SIMD_PI;
-          }
-        else if (tmp >= 1.0)
-          {
-            params->TrA = 0.0;
-          }
-        else
-          {
-            params->TrA = std::acos (tmp);
-          }
-
-        /* Changing sin_TrA_isNegative on a negative epsilon value doesn't seem right */
-        if (state->pos.dot (vel) + SIMD_EPSILON < 0.0)
-          {
-            sin_TrA_isNegative = true;
-            params->TrA = SIMD_2_PI - params->TrA;
-          }
-      }
+    getTrAFromState(state->pos, vel, n, e, isCircular, isEquatorial, &sin_TrA_isNegative);
 
     /*Lec*/
     params->Lec = elements->a * elements->e;
