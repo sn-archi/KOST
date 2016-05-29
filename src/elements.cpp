@@ -138,13 +138,47 @@ Added implementation of:
 
 namespace mKOST
 {
+  btVector3 gete(btScalar mu, sStateVector state)
+  {
+    btVector3 h (state.pos.cross (state.vel));
+    return (state.vel.cross(h) / mu - state.pos / state.pos.length());
+  }
+
+  btVector3 geth(sStateVector state)
+  {
+    return state.pos.cross (state.vel);
+  }
+
+  btVector3 getn(btVector3 h)
+  {
+    return btVector3 (0.0, 1.0, 0.0).cross (h);
+  }
+
+  btVector3 getn(btScalar LaN)
+  {
+    return btVector3 (std::cos (LaN), 0.0, std::sin (LaN));
+  }
+
+  btScalar getLaN(btVector3 n)
+  {
+    if (n.length() < SIMD_EPSILON)
+    {
+      return 0.0;
+    }
+    else
+    {
+      btScalar LaN = std::acos (n.getX() / n.length());
+      return (n.getZ() > 0.0)?SIMD_2_PI - LaN:LaN;
+    }
+  }
+
   btScalar getMeanAnomaly (
     btScalar mu,                   /* standard gravitational parameter */
     const sElements* elements)   /* pointer to orbital elements at epoch */
   {
     btScalar meanAnomaly;
     /* calc mean anomaly */
-    meanAnomaly = elements->L - elements->omegab;
+    meanAnomaly = elements->L - elements->LoP;
 
     if (elements->e < 1.0)
       {
@@ -290,6 +324,73 @@ namespace mKOST
     return ret;
   }
 
+  btScalar getAgP (btVector3 e, btVector3 n, btVector3 h, bool isCircular, bool isEquatorial)
+  {
+    if (isCircular)
+      {
+        return 0.0;
+      }
+    else if (isEquatorial)
+      {
+        btScalar AgP (atan2 (e.getZ(), e.getX()));
+        return (h.getY() < 0.0)?-AgP:AgP;
+      }
+    else
+      {
+        btScalar AgP (std::acos (n.dot (e) / (n.length() * e.length())));
+        return (e.getY() < 0.0)?SIMD_2_PI - AgP:AgP;
+      }
+  }
+
+  btScalar getTrAFromState(btVector3 pos, btVector3 vel, btVector3 n, btVector3 e, bool isCircular, bool isEquatorial)
+  {
+    btScalar TrA (0.0);
+    if (isCircular)
+    {
+      if (isEquatorial)
+      {
+        TrA = std::acos (pos.getX() / pos.length());
+        if (vel.getX() > 0.0)
+        {
+          TrA = SIMD_2_PI - TrA;
+        }
+      }
+      else
+      {
+        TrA = std::acos (n.dot (pos) ) / (n.length() * pos.length());
+        if (n.dot (vel) > 0.0)
+        {
+          TrA = SIMD_2_PI - TrA;
+        }
+      }
+    }
+    else
+    {
+      btScalar tmp = e.dot (pos) / (e.length() * pos.length());
+
+      /* Avoid acos out of range. 1 and -1 are included cause we know the result. */
+      if (tmp <= -1.0)
+      {
+        TrA = SIMD_PI;
+      }
+      else if (tmp >= 1.0)
+      {
+        TrA = 0.0;
+      }
+      else
+      {
+        TrA = std::acos (tmp);
+      }
+
+      /* Changing sin_TrA_isNegative on a negative epsilon value doesn't seem right */
+      if (pos.dot (vel) + SIMD_EPSILON < 0.0)
+      {
+        TrA = SIMD_2_PI - TrA;
+      }
+    }
+    return TrA;
+  }
+
   void elements2StateVector2 (
     btScalar mu,                  /* standard gravitational parameter */
     const sElements* elements, /* pointer to orbital elements at epoch */
@@ -314,11 +415,10 @@ namespace mKOST
     if (e == 1.0) /* parabolic orbit - approximate to hyperbolic orbit */
     {
       e += SIMD_EPSILON;
-      printf("Fuck parabols ! never happens anyways\n");
     }
 
     /* unit vector in direction of ascending node */
-    btVector3 n (btVector3 (std::cos(elements->theta), 0.0, std::sin(elements->theta)));
+    btVector3 n (getn (elements->LaN));
 
     /* unit vector pointing ecliptic north */
     btVector3 north (btVector3 (0.0, 1.0, 0.0));
@@ -349,7 +449,7 @@ namespace mKOST
 
     /* calc position vector */
     /* argument of position, measured from the longitude of ascending node */
-    btScalar argPos (elements->omegab - elements->theta + trueAnomaly);
+    btScalar argPos (elements->LoP - elements->LaN + trueAnomaly);
 
     /*
     calc direction of position vector:
@@ -451,59 +551,54 @@ namespace mKOST
     sOrbitParam* params)
   {
     if (params == NULL)
-      {
-        static sOrbitParam dummy;
-        params = &dummy;
-      }
+    {
+      static sOrbitParam dummy;
+      params = &dummy;
+    }
 
     btVector3 vel (state->vel);
 
-    btScalar absr (state->pos.length());
-
-    btVector3 h (state->pos.cross (vel));
-    btScalar absh (h.length());
+    btVector3 h (geth(*state));
 
     /*
     Radial orbits are not supported.
     e is not significantly different from 1.0
     if |h| < √(ε x µ x |r|)
     */
-    if (absh * absh < SIMD_EPSILON * mu * absr)
-      {
-        /*
-        We assume that the position is non-zero.
-        Otherwise, we are in a singularity anyway,
-        and no formula will get us out of there.
-        */
+    if (h.length2() < SIMD_EPSILON * mu * state->pos.length())
+    {
+      /*
+      We assume that the position is non-zero.
+      Otherwise, we are in a singularity anyway,
+      and no formula will get us out of there.
+      */
 
-        /* component of v parallel to pos */
-        btVector3 v_parallel ((state->pos.dot (vel) / state->pos.length2()) * state->pos);
+      /* component of v parallel to pos */
+      btVector3 v_parallel ((state->pos.dot (vel) / state->pos.length2()) * state->pos);
 
-        /*
-        Calculate how large the orthogonal component
-        should be to make e significantly different
-        from 1.0:
+      /*
+      Calculate how large the orthogonal component
+      should be to make e significantly different
+      from 1.0:
 
-        |v_ortho| = √(ε x μ / |r|)
-        */
-        btScalar v_ortho_size (std::sqrt (SIMD_EPSILON * mu / absr));
+      |v_ortho| = √(ε x μ / |r|)
+      */
+      btScalar v_ortho_size (std::sqrt (SIMD_EPSILON * mu / state->pos.length()));
 
-        /* New orthogonal component */
-        btVector3 v_ortho = btVector3 (0.0, 1.0, 0.0);
-        v_ortho = state->pos.cross (v_ortho);
-        v_ortho = (v_ortho_size / v_ortho.length()) * v_ortho;
+      /* New orthogonal component */
+      btVector3 v_ortho = btVector3 (0.0, 1.0, 0.0);
+      v_ortho = state->pos.cross (v_ortho);
+      v_ortho = (v_ortho_size / v_ortho.length()) * v_ortho;
 
-        /* replace the old orthogonal part */
-        vel = v_parallel + v_ortho;
+      /* replace the old orthogonal part */
+      vel = v_parallel + v_ortho;
 
-        h = state->pos.cross (vel);
-        absh = h.length();
-      }
+      h = state->pos.cross (vel);
+    }
 
-    btVector3 n = btVector3 (h.getZ(), 0.0, -h.getX());
-    btScalar absn (n.length());
+    btVector3 n (getn(h));
 
-    btScalar E (vel.length2() / 2 - mu / absr);
+    btScalar E (vel.length2() / 2 - mu / state->pos.length());
     if (E == 0.0)
       E = SIMD_EPSILON;
 
@@ -511,27 +606,23 @@ namespace mKOST
     Alternative formula for e:
     e = (v x h) / μ - r / |r|
     */
-    btVector3 e (vel.cross (h));
-    e *= absr / mu;
-    e -= state->pos;
-    e *= 1.0 / absr;
+    btVector3 e (gete(mu, *state));
 
     btScalar abse (e.length());
-
     /* parabolic orbit are not supported */
     if (abse > 1.0 - SIMD_EPSILON && abse < 1.0 + SIMD_EPSILON)
+    {
+      if (E >= 0.0)
       {
-        if (E >= 0.0)
-          {
-            abse = 1.0 + SIMD_EPSILON; /* Approximate with hyperbolic */
-          }
-        else
-          {
-            abse = 1.0 - SIMD_EPSILON; /* Approximate with elliptic */
-          }
+        abse = 1.0 + SIMD_EPSILON; /* Approximate with hyperbolic */
       }
+      else
+      {
+        abse = 1.0 - SIMD_EPSILON; /* Approximate with elliptic */
+      }
+    }
 
-    bool isEquatorial (absn < SIMD_EPSILON);
+    bool isEquatorial (n.length() < SIMD_EPSILON);
     bool isCircular (abse < SIMD_EPSILON);
     bool isHyperbola (abse >= 1.0);
 
@@ -557,7 +648,7 @@ namespace mKOST
       }
 
     /*Inc*/
-    if (absh == 0.0)
+    if (h.length() == 0.0)
       {
         /*
         Avoid division by zero absh
@@ -565,40 +656,18 @@ namespace mKOST
         which is the angle between r and the
         equatorial plane.
         */
-        elements->i = std::fmod (std::asin (state->pos.getY() / absr), SIMD_PI);
+        elements->i = std::fmod (std::asin (state->pos.getY() / state->pos.length()), SIMD_PI);
       }
     else
       {
-        elements->i = std::acos (h.getY() / absh);
+        elements->i = std::acos (h.getY() / h.length());
       }
 
-    /*LAN*/
-    if (isEquatorial)
-      {
-        elements->theta = 0.0;
-      }
-    else
-      {
-        elements->theta = std::acos (n.getX() / absn);
-        if (n.getZ() > 0.0) elements->theta = SIMD_2_PI - elements->theta;
-      }
+    /* Longitude of ascending node */
+    elements->LaN = getLaN(n);
 
-    /*AgP*/
-    params->AgP = 0.0;
-    if (isCircular)
-      {
-        params->AgP = 0.0;
-      }
-    else if (isEquatorial)
-      {
-        params->AgP = atan2 (e.getZ(), e.getX());
-        if (h.getY() < 0.0) params->AgP = -params->AgP;
-      }
-    else
-      {
-        params->AgP = std::acos (n.dot (e) / (absn * abse));
-        if (e.getY() < 0.0) params->AgP = SIMD_2_PI - params->AgP;
-      }
+    /* Argument of Periapsis*/
+    params->AgP = getAgP (e, n, h, isCircular, isEquatorial);
 
     /*TrA*/
     bool sin_TrA_isNegative (false);
@@ -606,7 +675,7 @@ namespace mKOST
       {
         if (isEquatorial)
           {
-            params->TrA = std::acos (state->pos.getX() / absr);
+            params->TrA = std::acos (state->pos.getX() / state->pos.length());
             if (vel.getX() > 0.0)
               {
                 sin_TrA_isNegative = true;
@@ -615,7 +684,7 @@ namespace mKOST
           }
         else
           {
-            params->TrA = std::acos (n.dot (state->pos) ) / (absn * absr);
+            params->TrA = std::acos (n.dot (state->pos) ) / (n.length() * state->pos.length());
             if (n.dot (vel) > 0.0)
               {
                 sin_TrA_isNegative = true;
@@ -625,7 +694,7 @@ namespace mKOST
       }
     else
       {
-        btScalar tmp = e.dot (state->pos) / (abse * absr);
+        btScalar tmp = e.dot (state->pos) / (abse * state->pos.length());
 
         /* Avoid acos out of range. 1 and -1 are included cause we know the result. */
         if (tmp <= -1.0)
@@ -668,12 +737,12 @@ namespace mKOST
       }
 
     /*LPe*/
-    elements->omegab = std::fmod (elements->theta + params->AgP, SIMD_2_PI);
+    elements->LoP = std::fmod (elements->LaN + params->AgP, SIMD_2_PI);
 
     /*EcA*/
     if (isHyperbola)
       {
-        btScalar tmp = (1.0 - absr / elements->a) / elements->e;
+        btScalar tmp = (1.0 - state->pos.length() / elements->a) / elements->e;
 
         /*Avoid acosh out of range:*/
         if (tmp <= 1.0)
@@ -691,7 +760,7 @@ namespace mKOST
       }
     else
       {
-        btScalar tmp = (1.0 - absr / elements->a) / elements->e;
+        btScalar tmp = (1.0 - state->pos.length() / elements->a) / elements->e;
 
         /* Avoid acos out of range. 1 and -1 are included cause we now the result. */
         if (tmp <= -1.0)
@@ -732,12 +801,12 @@ namespace mKOST
       }
 
     /*MnL*/
-    elements->L = params->MnA + elements->omegab;
+    elements->L = params->MnA + elements->LoP;
     if (!isHyperbola)
       elements->L = std::fmod (elements->L, SIMD_2_PI);
 
     /*TrL*/
-    params->TrL = std::fmod (elements->omegab + params->TrA, SIMD_2_PI);
+    params->TrL = std::fmod (elements->LoP + params->TrA, SIMD_2_PI);
 
     /*
     T = 2π√(a³/μ)
