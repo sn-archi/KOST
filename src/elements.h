@@ -73,7 +73,7 @@ namespace mKOST
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
 
-  void stateVector2Elements (
+  int stateVector2Elements (
     btScalar mu,                  /* standard gravitational parameter */
     const sStateVector* state, /* pointer to state vector at epoch */
     sElements* elements,       /* pointer to location where orbital elements at epoch will be stored */

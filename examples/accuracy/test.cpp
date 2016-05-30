@@ -7,7 +7,7 @@
 mKOST::sStateVector sv_maxVerror, sv_maxRerror;
 btScalar maxVerror = -1.0, maxRerror = -1.0;
 
-void testState (const mKOST::sStateVector* sv)
+int testState (const mKOST::sStateVector* sv)
 {
   mKOST::sElements elements;
   mKOST::sStateVector out;
@@ -16,10 +16,11 @@ void testState (const mKOST::sStateVector* sv)
   int ret;
 
   /*Convert to orbital elements*/
-  mKOST::stateVector2Elements (MU, sv, &elements, NULL);
+  if (mKOST::stateVector2Elements (MU, sv, &elements, NULL))
+    return 1;
 
   /*Convert back to state vector*/
-  ret = mKOST::elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000);
+  ret = mKOST::elements2StateVector (MU, &elements, &out, 10 * SIMD_EPSILON, 1000000);
 
   diff = sv->pos - out.pos;
   error = (diff.length() / sv->pos.length());
@@ -61,14 +62,16 @@ void testState (const mKOST::sStateVector* sv)
               maxVerror
              );
     }
+  return 0;
 }
 
 int main (int argc, char* argv[])
 {
   int rx, ry, rz, vx, vy, vz;
   mKOST::sStateVector sv;
-  int rmin = 4, rmax = 10, vmin = 0, vmax = 4;
-  int counter = 0;
+  int rmin = 4, rmax = 12, vmin = 0, vmax = 5;
+  int counter (0);
+  int skipped (0);
 
   /*Arbitrary 6D positions*/
   for (rx = rmin; rx <= rmax; ++rx)
@@ -100,13 +103,15 @@ int main (int argc, char* argv[])
 
                               sv.pos = btVector3 (srx * rxf, sry * ryf, srz * rzf);
                               sv.vel = btVector3 (svx * vxf, svy * vyf, svz * vzf);
-                              testState (&sv);
+                              if (testState (&sv))
+                                ++skipped;
                               ++counter;
                             }
               }
   printf ("maxRerror = %e\n", maxRerror);
   printf ("maxVerror = %e\n", maxVerror);
   printf ("tests done: %i\n", counter);
+  printf ("tests skipped: %i\n", skipped);
 
   return 0;
 }

@@ -547,7 +547,7 @@ namespace mKOST
     return ret;
   }
 
-  void stateVector2Elements (
+  int stateVector2Elements (
     btScalar mu,
     const sStateVector* state,
     sElements* elements,
@@ -562,6 +562,10 @@ namespace mKOST
     btVector3 vel (state->vel);
 
     btVector3 h (geth(*state));
+
+    /* If velocity and position vectors are paralel and aligned, quit*/
+    if (h.isZero())
+      return 1;
 
     /*
     Radial orbits are not supported.
@@ -788,5 +792,6 @@ namespace mKOST
 
     params->ApT = 0.5 * params->T - tPe;
     if (params->ApT < 0.0) params->ApT += params->T;
+    return 0;
   }
 }

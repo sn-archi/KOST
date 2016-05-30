@@ -19,12 +19,17 @@ int main (int argc, char* argv[])
   btVector3 output[N];
   unsigned int i = 0;
 
+//  /*Initial state at t=0*/
+//  initial.pos = btVector3 (-1.000000e+04, -1.000000e+08, -1.000000e+08);
+//  initial.vel = btVector3 (-1.000000e+01, -1.000000e+04, -1.000000e+04);
+
   /*Initial state at t=0*/
-  initial.pos = btVector3 (-1.0e4, 1.0e8, 1.0e4);
-  initial.vel = btVector3 (-1.0, 1.0e4, 1.0);
+  initial.pos = btVector3 (0.0, 0.0, -1.000000e+09);
+  initial.vel = btVector3 (0.0, 0.0, -1.000000e+05);
 
   /*Convert to orbital elements*/
-  mKOST::stateVector2Elements (MU, &initial, &elements, &params);
+  if (mKOST::stateVector2Elements (MU, &initial, &elements, &params))
+    return 1;
 
     printf ("initial:\n"
           "  position: %e, %e, %e\n"
@@ -63,7 +68,7 @@ int main (int argc, char* argv[])
           params.AgP
          );
 
-  if (!mKOST::elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000))
+  if (!mKOST::elements2StateVector (MU, &elements, &out, 10 * SIMD_EPSILON, 1000000))
     printf ("Couldn't find a root\n");
   printf ("reversed:\n"
           "  position: %e, %e, %e\n"
@@ -117,7 +122,7 @@ int main (int argc, char* argv[])
 
       mKOST::sStateVector stateNow;
 
-      mKOST::elements2StateVectorAtTime (MU, &elements, &stateNow, t, SIMD_EPSILON, 1000000, 0.0, 0.0);
+      mKOST::elements2StateVectorAtTime (MU, &elements, &stateNow, t, 10* SIMD_EPSILON, 1000000, 0.0, 0.0);
 
       output[i] = stateNow.pos;
     }
