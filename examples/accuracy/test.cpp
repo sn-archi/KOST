@@ -19,31 +19,33 @@ void testState (const mKOST::sStateVector* sv)
   mKOST::stateVector2Elements (MU, sv, &elements, NULL);
 
   /*Convert back to state vector*/
-  ret = mKOST::elements2StateVector (MU, &elements, &out, 1.0e-3, 1000000);
+  ret = mKOST::elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000);
 
   diff = sv->pos - out.pos;
   error = (diff.length() / sv->pos.length());
 
-  if (error > maxRerror && ret != 0)
+  if (error > maxRerror)
     {
       maxRerror = error;
       sv_maxRerror = *sv;
 
       printf ("New pos error max:\n"
               "     pos  = %e, %e, %e\n"
+              "     out  = %e, %e, %e\n"
               "     diff = %e, %e, %e\n"
               "     vel  = %e, %e, %e\n"
               "     error = %f\n",
-              sv_maxRerror.pos.getX(), sv_maxRerror.pos.getY(), sv_maxRerror.pos.getZ(),
+              sv->pos.getX(), sv->pos.getY(), sv->pos.getZ(),
+              out.pos.getX(), out.pos.getY(), out.pos.getZ(),
               diff.getX(), diff.getY(), diff.getZ(),
-              sv_maxRerror.vel.getX(), sv_maxRerror.vel.getY(), sv_maxRerror.vel.getZ(),
+              sv->vel.getX(), sv->vel.getY(), sv->vel.getZ(),
               maxRerror);
     }
 
   diff = sv->vel - out.vel;
   error = (diff.length() / sv->vel.length());
 
-  if (error > maxVerror && ret != 0)
+  if (error > maxVerror)
     {
       maxVerror = error;
       sv_maxVerror = *sv;
@@ -53,8 +55,8 @@ void testState (const mKOST::sStateVector* sv)
               "     vel = %e, %e, %e\n"
               "     diff = %e, %e, %e\n"
               "     error = %f\n",
-              sv_maxVerror.pos.getX(), sv_maxVerror.pos.getY(), sv_maxVerror.pos.getZ(),
-              sv_maxVerror.vel.getX(), sv_maxVerror.vel.getY(), sv_maxVerror.vel.getZ(),
+              sv->pos.getX(), sv->pos.getY(), sv->pos.getZ(),
+              sv->vel.getX(), sv->vel.getY(), sv->vel.getZ(),
               diff.getX(), diff.getY(), diff.getZ(),
               maxVerror
              );
@@ -65,7 +67,7 @@ int main (int argc, char* argv[])
 {
   int rx, ry, rz, vx, vy, vz;
   mKOST::sStateVector sv;
-  int rmin = 5, rmax = 12, vmin = 0, vmax = 4;
+  int rmin = 4, rmax = 10, vmin = 0, vmax = 4;
   int counter = 0;
 
   /*Arbitrary 6D positions*/
