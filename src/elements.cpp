@@ -637,18 +637,17 @@ namespace mKOST
       dp = a(1 - e)
       da = a(1 + e)
     */
+    elements->a = -mu / (2.0 * E);
     if (isHyperbola)
-      {
-        params->PeD = h.length2() / mu;
-        elements->a = INFINITY;
-        params->ApD = INFINITY;
-      }
+    {
+      params->PeD = h.length2() / mu;
+      params->ApD = INFINITY;
+    }
     else
-      {
-        elements->a = -mu / (2.0 * E);
-        params->ApD = elements->a * (1.0 + elements->e);
-        params->PeD = elements->a * (1.0 - elements->e);
-      }
+    {
+      params->ApD = elements->a * (1.0 + elements->e);
+      params->PeD = elements->a * (1.0 - elements->e);
+    }
 
     /*Inc*/
     if (h.length() == 0.0)
