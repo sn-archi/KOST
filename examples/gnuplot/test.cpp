@@ -6,7 +6,7 @@
 #include "../../src/mKOST.h"
 
 /* Number of output samples */
-#define N 500
+#define N 100
 
 int main (int argc, char* argv[])
 {
@@ -19,11 +19,9 @@ int main (int argc, char* argv[])
   btVector3 output[N];
   unsigned int i = 0;
 
-  std::cout << std::endl << std::endl << std::endl;
-
   /*Initial state at t=0*/
-  initial.pos = btVector3 (-1.0e6, -1.0e5, 1.0e5);
-  initial.vel = btVector3 (-1.0e4, -1.0e3, 1.0e3);
+  initial.pos = btVector3 (-1.0e4, 1.0e8, 1.0e4);
+  initial.vel = btVector3 (-1.0, 1.0e4, 1.0);
 
   /*Convert to orbital elements*/
   mKOST::stateVector2Elements (MU, &initial, &elements, &params);
@@ -43,8 +41,8 @@ int main (int argc, char* argv[])
           "     a = %e m\n"
           "     e = %e\n"
           "     i = %e\n"
-          " theta = %e\n"
-          "omegab = %e\n"
+          "   LaN = %e\n"
+          "   LoP = %e\n"
           "     L = %e\n",
           elements.a, elements.e, elements.i, elements.LaN, elements.LoP, elements.L
          );
@@ -83,8 +81,8 @@ int main (int argc, char* argv[])
           "     a = %e m\n"
           "     e = %e\n"
           "     i = %e\n"
-          " theta = %e\n"
-          "omegab = %e\n"
+          "   LaN = %e\n"
+          "   LoP = %e\n"
           "     L = %e\n",
           elements2.a,
           elements2.e,
@@ -119,7 +117,7 @@ int main (int argc, char* argv[])
 
       mKOST::sStateVector stateNow;
 
-      mKOST::elements2StateVectorAtTime (MU, &elements, &stateNow, t, SIMD_EPSILON, 1000, 0.0, 0.0);
+      mKOST::elements2StateVectorAtTime (MU, &elements, &stateNow, t, SIMD_EPSILON, 1000000, 0.0, 0.0);
 
       output[i] = stateNow.pos;
     }
