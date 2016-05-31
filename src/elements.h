@@ -30,53 +30,106 @@ This header file contains orbital element tools
 
 namespace mKOST
 {
-  btVector3 gete(btScalar mu, sStateVector state);
-  btVector3 geth(sStateVector state);
-  btVector3 getn(btVector3 h);
-  btVector3 getn(btScalar LaN);
-  btScalar getLaN(btVector3 n);
+  class Orbit
+  {
+    public:
+      btVector3 gete (btScalar mu, sStateVector state);
+      btVector3 geth (sStateVector state);
+      btVector3 getn (btVector3 h);
+      btVector3 getn (btScalar LaN);
+      btScalar getLaN (btVector3 n);
+      btScalar getAgP (btVector3 e, btVector3 n, btVector3 h, bool isCircular, bool isEquatorial);
+      btScalar getTrAFromState (btVector3 pos, btVector3 vel, btVector3 n, btVector3 e, bool isCircular, bool isEquatorial, bool* sin_TrA_isNegative);
 
-  btScalar getMeanAnomaly (
-    btScalar mu,                   /* standard gravitational parameter */
-    const sElements* elements); /* pointer to orbital elements at epoch */
+      btScalar getMeanAnomaly (
+        btScalar mu,                   /* standard gravitational parameter */
+        const sElements* elements); /* pointer to orbital elements at epoch */
 
-  int getEccentricAnomaly (
-    const sElements* elements,      /* pointer to orbital elements at epoch */
-    btScalar* eccentricAnomaly,        /* location where result will be stored */
-    btScalar meanAnomaly,              /* mean anomaly */
-    btScalar eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
-    btScalar maxRelativeError,         /* maximum relative error in eccentric anomaly */
-    int maxIterations);                /* max number of iterations for calculating eccentric anomaly */
+      int getEccentricAnomaly (
+        const sElements* elements,      /* pointer to orbital elements at epoch */
+        btScalar* eccentricAnomaly,        /* location where result will be stored */
+        btScalar meanAnomaly,              /* mean anomaly */
+        btScalar eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
+        btScalar maxRelativeError,         /* maximum relative error in eccentric anomaly */
+        int maxIterations);                /* max number of iterations for calculating eccentric anomaly */
 
-  int getTrueAnomaly (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    btScalar* trueAnomaly,        /* location where result will be stored */
-    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
-    int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
+      int getTrueAnomaly (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sElements* elements, /* pointer to orbital elements at epoch */
+        btScalar* trueAnomaly,        /* location where result will be stored */
+        btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+        int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
 
-  btScalar getTrueAnomaly2 (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    btScalar eccentricAnomaly);   /* eccentric anomaly */
+      btScalar getTrueAnomaly2 (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sElements* elements, /* pointer to orbital elements at epoch */
+        btScalar eccentricAnomaly);   /* eccentric anomaly */
 
-  void elements2StateVector2 (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    sStateVector* state,       /* pointer to location where state vector at epoch will be stored */
-    btScalar trueAnomaly);        /* true anomaly */
+      void elements2StateVector2 (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sElements* elements, /* pointer to orbital elements at epoch */
+        sStateVector* state,       /* pointer to location where state vector at epoch will be stored */
+        btScalar trueAnomaly);        /* true anomaly */
 
-  int elements2StateVector (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    sStateVector* state,       /* pointer to location where state vector will be stored */
-    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
-    int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
+      int elements2StateVector (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sElements* elements, /* pointer to orbital elements at epoch */
+        sStateVector* state,       /* pointer to location where state vector will be stored */
+        btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+        int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
 
-  int stateVector2Elements (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sStateVector* state, /* pointer to state vector at epoch */
-    sElements* elements,       /* pointer to location where orbital elements at epoch will be stored */
-    sOrbitParam* params);      /* pointer to location where extra orbital parameters will be stored */
+      int stateVector2Elements (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sStateVector* state, /* pointer to state vector at epoch */
+        sElements* elements,       /* pointer to location where orbital elements at epoch will be stored */
+        sOrbitParam* params);      /* pointer to location where extra orbital parameters will be stored */
+
+      void elements2Shape (const sElements* elements, sOrbitShape* shape);
+
+      btScalar getMeanAnomalyAtTime (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sElements* elements, /* pointer to orbital elements at epoch */
+        btScalar timeSinceEpoch);     /* time since epoch in seconds */
+
+      int getTrueAnomalyAtTime (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sElements* elements, /* pointer to orbital elements at epoch */
+        btScalar* trueAnomaly,        /* location where result will be stored */
+        btScalar timeSinceEpoch,      /* time since epoch in seconds */
+        btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+        int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
+
+      btScalar getLANAtTime (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sElements* elements, /* pointer to orbital elements at epoch */
+        btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
+        btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
+        btScalar timeSinceEpoch);     /* time since epoch in seconds */
+
+      btScalar getArgPeAtTime (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sElements* elements, /* pointer to orbital elements at epoch */
+        btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
+        btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
+        btScalar timeSinceEpoch);     /* time since epoch in seconds */
+
+      int elements2StateVectorAtTime (
+        btScalar mu,                  /* standard gravitational parameter */
+        const sElements* elements, /* pointer to orbital elements at epoch */
+        sStateVector* state,       /* pointer to where state vectors at epoch+timeSinceEpoch will be stored */
+        btScalar timeSinceEpoch,      /* time since epoch in seconds */
+        btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+        int maxIterations,            /* max number of iterations for calculating eccentric anomaly */
+        btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
+        btScalar jTwoCoeff);          /* J2 coefficient of the non-spherical body being orbited */
+
+      void getElementsAtTime (
+        btScalar mu,                     /* standard gravitational parameter */
+        const sElements* elements,    /* pointer to orbital elements at epoch */
+        sElements* newElements,       /* pointer to where elements at epoch+timeSinceEpoch will be stored */
+        btScalar timeSinceEpoch,         /* time since epoch in seconds */
+        btScalar bodyRadius,             /* mean radius of the non-spherical body being orbited */
+        btScalar jTwoCoeff);             /* J2 coefficient of the non-spherical body being orbited */
+  };
 }
 #endif // ELEMENTS_H

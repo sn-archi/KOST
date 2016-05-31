@@ -20,11 +20,11 @@
 
 #include <cmath>
 
-#include "shape.h"
+#include "elements.h"
 
 namespace mKOST
 {
-  void elements2Shape (const sElements* elements, sOrbitShape* shape)
+  void Orbit::elements2Shape (const sElements* elements, sOrbitShape* shape)
   {
     unsigned int i = 0;
 
@@ -42,37 +42,37 @@ namespace mKOST
 
     /*Points*/
     if (shape->numPoints == 1)
-      {
-        shape->points[0] = shape->pe;
-      }
+    {
+      shape->points[0] = shape->pe;
+    }
     else if (shape->numPoints > 1)
+    {
+      btScalar maxTrA, dTrA, TrA;
+
+      /*Range of angles*/
+      maxTrA = SIMD_PI;
+      if (elements->e >= 1.0)
+        {
+          maxTrA = std::acos (-1.0 / elements->e);
+
+          /*Make it a bit smaller to avoid division by zero:*/
+          maxTrA *= ( ( (btScalar) shape->numPoints) / (shape->numPoints + 1) );
+        }
+
+      /*Angle change per segment*/
+      dTrA = (2 * maxTrA) / (shape->numPoints - 1);
+
+      TrA = -maxTrA;
+      for (i = 0; i < shape->numPoints; i++)
       {
-        btScalar maxTrA, dTrA, TrA;
+        btScalar absr = std::fabs (multiplier / (1.0 + elements->e * std::cos (TrA) ) );
 
-        /*Range of angles*/
-        maxTrA = SIMD_PI;
-        if (elements->e >= 1.0)
-          {
-            maxTrA = std::acos (-1.0 / elements->e);
+        btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
+        shape->points[i] = absr * direction;
 
-            /*Make it a bit smaller to avoid division by zero:*/
-            maxTrA *= ( ( (btScalar) shape->numPoints) / (shape->numPoints + 1) );
-          }
-
-        /*Angle change per segment*/
-        dTrA = (2 * maxTrA) / (shape->numPoints - 1);
-
-        TrA = -maxTrA;
-        for (i = 0; i < shape->numPoints; i++)
-          {
-            btScalar absr = std::fabs (multiplier / (1.0 + elements->e * std::cos (TrA) ) );
-
-            btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
-            shape->points[i] = absr * direction;
-
-            TrA += dTrA;
-          }
+        TrA += dTrA;
       }
+    }
 
 
     /*AN*/
@@ -81,14 +81,14 @@ namespace mKOST
       btScalar absr = multiplier / (1.0 + elements->e * std::cos (TrA) );
 
       if (absr <= 0.0)
-        {
-          shape->an = btVector3 (0.0, 0.0, 0.0);
-        }
+      {
+        shape->an = btVector3 (0.0, 0.0, 0.0);
+      }
       else
-        {
-          btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
-          shape->an = absr * direction;
-        }
+      {
+        btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
+        shape->an = absr * direction;
+      }
     }
 
     /*DN*/
@@ -97,17 +97,15 @@ namespace mKOST
       btScalar absr = multiplier / (1.0 + elements->e * std::cos (TrA) );
 
       if (absr <= 0.0)
-        {
-          shape->dn = btVector3 (0.0, 0.0, 0.0);
-        }
+      {
+        shape->dn = btVector3 (0.0, 0.0, 0.0);
+      }
       else
-        {
-          btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
-          shape->dn = absr * direction;
-        }
+      {
+        btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
+        shape->dn = absr * direction;
+      }
     }
-
-
 
     /*
     Then: rotate the coordinates:

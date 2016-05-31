@@ -138,28 +138,28 @@ Added implementation of:
 
 namespace mKOST
 {
-  btVector3 gete(btScalar mu, sStateVector state)
+  btVector3 Orbit::gete(btScalar mu, sStateVector state)
   {
     btVector3 h (state.pos.cross (state.vel));
     return (state.vel.cross(h) / mu - state.pos / state.pos.length());
   }
 
-  btVector3 geth(sStateVector state)
+  btVector3 Orbit::geth(sStateVector state)
   {
     return state.pos.cross (state.vel);
   }
 
-  btVector3 getn(btVector3 h)
+  btVector3 Orbit::getn(btVector3 h)
   {
     return btVector3 (0.0, 1.0, 0.0).cross (h);
   }
 
-  btVector3 getn(btScalar LaN)
+  btVector3 Orbit::getn(btScalar LaN)
   {
     return btVector3 (std::cos (LaN), 0.0, -std::sin (LaN));
   }
 
-  btScalar getLaN(btVector3 n)
+  btScalar Orbit::getLaN(btVector3 n)
   {
     if (n.length() < SIMD_EPSILON)
     {
@@ -172,7 +172,7 @@ namespace mKOST
     }
   }
 
-  btScalar getMeanAnomaly (
+  btScalar Orbit::getMeanAnomaly (
     btScalar mu,                   /* standard gravitational parameter */
     const sElements* elements)   /* pointer to orbital elements at epoch */
   {
@@ -190,7 +190,7 @@ namespace mKOST
     return meanAnomaly;
   }
 
-  int getEccentricAnomaly (
+  int Orbit::getEccentricAnomaly (
     const sElements* elements,      /* pointer to orbital elements at epoch */
     btScalar* eccentricAnomaly,        /* location where result will be stored */
     btScalar meanAnomaly,              /* mean anomaly */
@@ -262,7 +262,7 @@ namespace mKOST
       return 0;
   }
 
-  int getTrueAnomaly (
+  int Orbit::getTrueAnomaly (
     btScalar mu,                  /* standard gravitational parameter */
     const sElements* elements,    /* pointer to orbital elements at epoch */
     btScalar* trueAnomaly,        /* location where result will be stored */
@@ -305,7 +305,7 @@ namespace mKOST
     return ret;
   }
 
-  btScalar getTrueAnomaly2 (
+  btScalar Orbit::getTrueAnomaly2 (
     btScalar mu,                  /* standard gravitational parameter */
     const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar eccentricAnomaly)    /* eccentric anomaly */
@@ -324,7 +324,7 @@ namespace mKOST
     return ret;
   }
 
-  btScalar getAgP (btVector3 e, btVector3 n, btVector3 h, bool isCircular, bool isEquatorial)
+  btScalar Orbit::getAgP (btVector3 e, btVector3 n, btVector3 h, bool isCircular, bool isEquatorial)
   {
     if (isCircular)
       {
@@ -342,7 +342,7 @@ namespace mKOST
       }
   }
 
-  btScalar getTrAFromState(btVector3 pos, btVector3 vel, btVector3 n, btVector3 e, bool isCircular, bool isEquatorial, bool* sin_TrA_isNegative)
+  btScalar Orbit::getTrAFromState(btVector3 pos, btVector3 vel, btVector3 n, btVector3 e, bool isCircular, bool isEquatorial, bool* sin_TrA_isNegative)
   {
     btScalar TrA (0.0);
     if (isCircular)
@@ -394,7 +394,7 @@ namespace mKOST
     return TrA;
   }
 
-  void elements2StateVector2 (
+  void Orbit::elements2StateVector2 (
     btScalar mu,                  /* standard gravitational parameter */
     const sElements* elements, /* pointer to orbital elements at epoch */
     sStateVector* state,       /* pointer to location where state vector at epoch will be stored */
@@ -518,7 +518,7 @@ namespace mKOST
     state->vel = vPro + vO;
   }
 
-  int elements2StateVector (
+  int Orbit::elements2StateVector (
     btScalar mu,                  /* standard gravitational parameter */
     const sElements* elements,    /* pointer to orbital elements at epoch */
     sStateVector* state,          /* pointer to location where state vector will be stored */
@@ -547,7 +547,7 @@ namespace mKOST
     return ret;
   }
 
-  int stateVector2Elements (
+  int Orbit::stateVector2Elements (
     btScalar mu,
     const sStateVector* state,
     sElements* elements,
@@ -566,42 +566,6 @@ namespace mKOST
     /* If velocity and position vectors are paralel and aligned, quit*/
     if (h.isZero())
       return 1;
-
-    /*
-    Radial orbits are not supported.
-    e is not significantly different from 1.0
-    if |h| < √(ε x µ x |r|)
-    */
-    if (h.length2() < SIMD_EPSILON * mu * state->pos.length())
-    {
-      /*
-      We assume that the position is non-zero.
-      Otherwise, we are in a singularity anyway,
-      and no formula will get us out of there.
-      */
-
-      /* component of v parallel to pos */
-      btVector3 v_parallel ((state->pos.dot (vel) / state->pos.length2()) * state->pos);
-
-      /*
-      Calculate how large the orthogonal component
-      should be to make e significantly different
-      from 1.0:
-
-      |v_ortho| = √(ε x μ / |r|)
-      */
-      btScalar v_ortho_size (std::sqrt (SIMD_EPSILON * mu / state->pos.length()));
-
-      /* New orthogonal component */
-      btVector3 v_ortho = btVector3 (0.0, 1.0, 0.0);
-      v_ortho = state->pos.cross (v_ortho);
-      v_ortho = (v_ortho_size / v_ortho.length()) * v_ortho;
-
-      /* replace the old orthogonal part */
-      vel = v_parallel + v_ortho;
-
-      h = state->pos.cross (vel);
-    }
 
     btVector3 n (getn(h));
 

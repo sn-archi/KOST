@@ -83,11 +83,9 @@ Renamed several functions
 
 #include "elements.h"
 
-#include "propagate.h"
-
 namespace mKOST
 {
-  btScalar getMeanAnomalyAtTime (
+  btScalar Orbit::getMeanAnomalyAtTime (
     btScalar mu,                  /* standard gravitational parameter */
     const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar timeSinceEpoch)      /* time since epoch in seconds */
@@ -115,7 +113,7 @@ namespace mKOST
     return meanAnomaly;
   }
 
-  int getTrueAnomalyAtTime (
+  int Orbit::getTrueAnomalyAtTime (
     btScalar mu,                  /* standard gravitational parameter */
     const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar* trueAnomaly,        /* location where result will be stored */
@@ -164,7 +162,7 @@ namespace mKOST
       return elements->LaN;
   }
 
-  btScalar getArgPeAtTime (
+  btScalar Orbit::getArgPeAtTime (
     btScalar mu,                  /* standard gravitational parameter */
     const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
@@ -183,7 +181,7 @@ namespace mKOST
       return ( elements->LoP - elements->LaN );
   }
 
-  int elements2StateVectorAtTime (
+  int Orbit::elements2StateVectorAtTime (
     btScalar mu,                  /* standard gravitational parameter */
     const sElements* elements, /* pointer to orbital elements at epoch */
     sStateVector* state,       /* pointer to location where state vectors at epoch+timeSinceEpoch will be stored */
@@ -217,7 +215,7 @@ namespace mKOST
     return ret;
   }
 
-  void getElementsAtTime (
+  void Orbit::getElementsAtTime (
     btScalar mu,                     /* standard gravitational parameter */
     const sElements* elements,    /* pointer to orbital elements at epoch */
     sElements* newElements,       /* pointer to location where elements at epoch+timeSinceEpoch will be stored */
