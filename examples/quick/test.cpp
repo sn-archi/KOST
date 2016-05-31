@@ -7,29 +7,29 @@
 
 int main (int argc, char* argv[])
 {
-  /*Data about central body (earth)*/
-  double R = 6378100.0;
-  double mu = 3.986004418e14;
-
   mKOST::sStateVector out;
   mKOST::sElements elements, elements2;
   mKOST::sOrbitParam params;
 
-  std::cout << std::endl << std::endl << std::endl;
-
   /*Alternative test, with an initial param list at t0*/
-  elements.a = 6139129.926482;
-  elements.e = 3.892572e-01;
+  elements.a = 5.799119e5;
+  elements.e = 0.9;
   elements.i = SIMD_PI / 4;
-  elements.omegab = SIMD_HALF_PI;
-  elements.theta = 0.0;
-  elements.L = SIMD_HALF_PI;
+  elements.LoP = SIMD_PI / 4;
+  elements.LaN = 0.2;
+  elements.L = 0.0;
+
+  for (btScalar LaN=0.0;LaN <= SIMD_2_PI;LaN+=0.05*SIMD_2_PI)
+  {
+    btScalar result = mKOST::getLaN(mKOST::getn(LaN));
+    printf ("LaN: %e, result: %e\n", LaN, result);
+  }
 
   /*Convert to orbital elements*/
-  mKOST::elements2StateVector (mu, &elements, &out, SIMD_EPSILON, 1000000);
-  mKOST::stateVector2Elements (mu, &out, &elements2, &params);
+  //mKOST::elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000);
+  //mKOST::stateVector2Elements (MU, &out, &elements2, &params);
 
-
+/*
   printf ("Orbital elements:\n"
           "     a = %f m\n"
           "     e = %f\n"
@@ -37,7 +37,7 @@ int main (int argc, char* argv[])
           " theta = %f\n"
           "omegab = %f\n"
           "     L = %f\n",
-          elements.a, elements.e, elements.i, elements.theta, elements.omegab, elements.L
+          elements.a, elements.e, elements.i, elements.LaN, elements.LoP, elements.L
          );
 
   printf ("Orbital elements reversed:\n"
@@ -47,7 +47,7 @@ int main (int argc, char* argv[])
           " theta = %f\n"
           "omegab = %f\n"
           "     L = %f\n",
-          elements2.a, elements2.e, elements2.i, elements2.theta, elements2.omegab, elements2.L
+          elements2.a, elements2.e, elements2.i, elements2.LaN, elements2.LoP, elements2.L
          );
   printf ("Additional parameters:\n"
           "   PeD = %f m\n"
@@ -75,6 +75,6 @@ int main (int argc, char* argv[])
           out.vel.getY(),
           out.vel.getZ()
           );
-
+*/
   return 0;
 }

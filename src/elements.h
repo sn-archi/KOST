@@ -30,9 +30,11 @@ This header file contains orbital element tools
 
 namespace mKOST
 {
-#ifdef __cplusplus
-  extern "C" {
-#endif
+  btVector3 gete(btScalar mu, sStateVector state);
+  btVector3 geth(sStateVector state);
+  btVector3 getn(btVector3 h);
+  btVector3 getn(btScalar LaN);
+  btScalar getLaN(btVector3 n);
 
   btScalar getMeanAnomaly (
     btScalar mu,                   /* standard gravitational parameter */
@@ -71,14 +73,10 @@ namespace mKOST
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
 
-  void stateVector2Elements (
+  int stateVector2Elements (
     btScalar mu,                  /* standard gravitational parameter */
     const sStateVector* state, /* pointer to state vector at epoch */
     sElements* elements,       /* pointer to location where orbital elements at epoch will be stored */
     sOrbitParam* params);      /* pointer to location where extra orbital parameters will be stored */
-
-#ifdef __cplusplus
-}
-#endif
 }
 #endif // ELEMENTS_H

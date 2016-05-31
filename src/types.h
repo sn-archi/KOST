@@ -32,23 +32,16 @@ This header defines the data types of KOST.
 
 namespace mKOST
 {
-#ifdef __cplusplus
-  extern "C" {
-#endif
-
-#ifndef sElements
   typedef struct
   {
     btScalar a;      /*Semi-major axis*/
     btScalar e;      /*Eccentricity*/
     btScalar i;      /*Inclination*/
-    btScalar theta;  /*Longitude of ascending node*/
-    btScalar omegab; /*Longitude of periapsis*/
+    btScalar LaN;    /*Longitude of ascending node*/
+    btScalar LoP;    /*Longitude of periapsis*/
     btScalar L;      /*Mean longitude at epoch*/
   } sElements;
-#endif
 
-#ifndef sOrbitParam
   typedef struct
   {
     /*Same as ORBITPARAM*/
@@ -64,11 +57,8 @@ namespace mKOST
     btScalar T;    /*orbit period*/
     btScalar PeT;  /*time to next periapsis passage*/
     btScalar ApT;  /*time to next apoapsis passage*/
-
-    /*Additional*/
     btScalar AgP;  /*argument of periapsis*/
   } sOrbitParam;
-#endif // kostOrbitParam
 
   typedef struct
   {
@@ -76,19 +66,12 @@ namespace mKOST
     btVector3 vel;
   } sStateVector;
 
-
   typedef struct
   {
     btVector3 pe, ap, dn, an;
-
     btVector3* points;
     unsigned int numPoints;
-
   } sOrbitShape;
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus
 }
 #endif // TYPES_H
 

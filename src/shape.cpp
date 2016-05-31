@@ -30,7 +30,7 @@ namespace mKOST
 
     /*Some utility values: */
     btScalar multiplier = elements->a * (1.0 - elements->e * elements->e);
-    btScalar AgP = elements->omegab - elements->theta;
+    btScalar AgP = elements->LoP - elements->LaN;
 
     /*
     First: Orbit in its own coordinate system:
@@ -117,7 +117,7 @@ namespace mKOST
 
       AgPMat.setEulerZYX (0.0, AgP, 0.0);
       IncMat.setEulerZYX (elements->i, 0.0, 0.0);
-      LANMat.setEulerZYX (0.0, elements->theta, 0.0);
+      LANMat.setEulerZYX (0.0, elements->LaN, 0.0);
 
       /* Now, global = LANMat * IncMat * AgPMat * local: */
       transform = LANMat * IncMat;

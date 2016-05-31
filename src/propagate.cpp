@@ -108,7 +108,7 @@ namespace mKOST
 
     /* calc mean anomaly */
     /* fmod takes care of overflow in the case where the mean anomaly exceeds one revolution */
-    meanAnomaly = std::fmod (elements->L - elements->omegab + deltaMeanAnomaly, SIMD_2_PI);
+    meanAnomaly = std::fmod (elements->L - elements->LoP + deltaMeanAnomaly, SIMD_2_PI);
 
     if (meanAnomaly < 0) meanAnomaly += SIMD_2_PI;
 
@@ -158,10 +158,10 @@ namespace mKOST
     if (elements->e < 1.0) /* elliptical orbit */
       {
         meanMotion = std::sqrt (mu / pow (elements->a, 3.0) );
-        return ( elements->theta + timeSinceEpoch * (-3.0 * meanMotion / 2.0) * pow (bodyRadius / elements->a, 2.0) * (cos (elements->i) / pow (1.0 - pow (elements->e, 2.0), 2.0) ) * jTwoCoeff );
+        return ( elements->LaN + timeSinceEpoch * (-3.0 * meanMotion / 2.0) * pow (bodyRadius / elements->a, 2.0) * (cos (elements->i) / pow (1.0 - pow (elements->e, 2.0), 2.0) ) * jTwoCoeff );
       }
     else /* hyperbolic orbit - non spherical effect is negligible */
-      return elements->theta;
+      return elements->LaN;
   }
 
   btScalar getArgPeAtTime (
@@ -176,11 +176,11 @@ namespace mKOST
     if (elements->e < 1.0) /* elliptical orbit */
       {
         meanMotion = std::sqrt (mu / std::pow (elements->a, 3.0) );
-        return ( elements->omegab - elements->theta + timeSinceEpoch * (3.0 * meanMotion / 4.0) * std::pow (bodyRadius / elements->a, 2.0) * ( (5.0 * std::pow (std::cos (elements->i),
+        return ( elements->LoP - elements->LaN + timeSinceEpoch * (3.0 * meanMotion / 4.0) * std::pow (bodyRadius / elements->a, 2.0) * ( (5.0 * std::pow (std::cos (elements->i),
                  2.0) - 1.0) / std::pow (1.0 - std::pow (elements->e, 2.0), 2.0) ) * jTwoCoeff );
       }
     else /* hyperbolic orbit - non spherical effect is negligible */
-      return ( elements->omegab - elements->theta );
+      return ( elements->LoP - elements->LaN );
   }
 
   int elements2StateVectorAtTime (
@@ -228,17 +228,17 @@ namespace mKOST
     *newElements = *elements;
 
     /* Mean longitude: */
-    newElements->L = getMeanAnomalyAtTime (mu, newElements, timeSinceEpoch) + newElements->omegab;
+    newElements->L = getMeanAnomalyAtTime (mu, newElements, timeSinceEpoch) + newElements->LoP;
 
     if (bodyRadius > SIMD_EPSILON)
       {
         /* longitude of ascending node */
-        newElements->theta =
+        newElements->LaN =
           getLANAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
 
         /* argument of periapsis */
-        newElements->omegab =
-          newElements->theta +
+        newElements->LoP =
+          newElements->LaN +
           getArgPeAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
       }
   }
