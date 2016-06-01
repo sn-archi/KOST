@@ -19,8 +19,8 @@
  ***************************************************************************/
 
 /*
-KOST is the Kepler Orbital Simulation Toolkit.
-This header file contains orbital element tools
+mKOST is the modified Kepler Orbital Simulation Toolkit.
+This header file contains the Orbit object
 */
 
 #ifndef ELEMENTS_H
@@ -33,7 +33,7 @@ namespace mKOST
   class Orbit
   {
     public:
-      btVector3 gete (btScalar mu, sStateVector state);
+      btVector3 calc_e (btScalar mu, btVector3 pos, btVector3 vel);
       btVector3 geth (sStateVector state);
       btVector3 getn (btVector3 h);
       btVector3 getn (btScalar LaN);
@@ -130,6 +130,33 @@ namespace mKOST
         btScalar timeSinceEpoch,         /* time since epoch in seconds */
         btScalar bodyRadius,             /* mean radius of the non-spherical body being orbited */
         btScalar jTwoCoeff);             /* J2 coefficient of the non-spherical body being orbited */
+    private:
+      btScalar a;      /* Semi-major axis */
+      btScalar e;      /* Eccentricity */
+      btScalar i;      /* Inclination */
+      btScalar LaN;    /* Longitude of ascending node */
+      btScalar LoP;    /* Longitude of periapsis */
+      btScalar L;      /* Mean longitude at epoch */
+      btScalar SMi;    /* semi-minor axis */
+      btScalar PeD;    /* periapsis distance */
+      btScalar ApD;    /* apoapsis distance */
+      btScalar MnA;    /* mean anomaly */
+      btScalar TrA;    /* true anomaly */
+      btScalar MnL;    /* mean longitude */
+      btScalar TrL;    /* true longitude */
+      btScalar EcA;    /* eccentric anomaly */
+      btScalar Lec;    /* linear eccentricity */
+      btScalar T;      /* orbital period */
+      btScalar PeT;    /* time to next periapsis passage */
+      btScalar ApT;    /* time to next apoapsis passage */
+      btScalar AgP;    /* argument of periapsis */
+      btVector3 pos;   /* Position at epoch */
+      btVector3 vel;   /* Velocity at epoch */
+      btVector3 pe, ap, dn, an; /* node positions */
+      btVector3* points;
+      unsigned int numPoints;
+      bool isCircular;
+      bool isEquatorial;
   };
 }
 #endif // ELEMENTS_H

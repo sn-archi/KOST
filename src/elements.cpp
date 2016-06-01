@@ -18,115 +18,25 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-/*
-Changelog:
-
-CJP       = C J Plooy
-TBlaxland = Tim Blaxland
-
-Format:
------------------
-date (dd-mm-yyyy)
-author
-changes
-
------------------
-17-04-2010
-CJP
-Fixed the size of a small addition to the velocity
-vector for radial orbits, so that extreme cases are
-better supported.
-Various fixes to make these functions pass the
-accuracy test
-
------------------
-19-03-2010
-CJP
-Applied some of the patches as suggested by
-TBlaxland to fix a bug reported by Pagnatious
-and to avoid having an undefined velocity in
-kostElements2StateVector2.
-
-Made some other changes to how velocity calculation
-is done in kostElements2StateVector2.
-
-Changed kostStateVector2Elements, so that it approximates
-parabolic orbits by ellipses in some cases.
-
-Changed the output range of kostGetMeanAnomaly, the meanAnomaly
-input range of kostGetEccentricAnomaly, and the output range
-of kostGetEccentricAnomaly, to fix a bug for hyperbolic
-orbits.
-
-Added support for radial orbits
-
------------------
-01-03-2009
-CJP
-Replaced while loops with fmod, as suggested by TBlaxland
-
------------------
-01-02-2009
-TBlaxland
-Fixed bugs in kostGetMeanAnomaly and kostElements2StateVector2
-
------------------
-24-01-2009
-CJP
-Moved some functions to kost_time.c
-
------------------
-19-01-2009
-TBlaxland
-Fixed some minor bugs
-Changed kostElements2StateVector2 from left-hand to right-hand coordinates
-
------------------
-17-01-2009
-CJP
-Changed some whitespace formatting
-Made TBlaxland's functions ANSI compatible
-
------------------
-14-01-2009
-TBlaxland
-Added implementation of:
-	kostGetMeanAnomaly
-	kostGetEccentricAnomaly
-	kostGetTrueAnomaly1
-	kostGetTrueAnomaly2
-	kostGetLAN
-	kostGetArgPe
-	kostElements2StateVector1
-	kostElements2StateVector2
-Fixed division by zero at e==1.0
------------------
-16-11-2008
-CJP
-Initial version
-Added implementation of:
-	kostStateVector2Elements
-*/
-
 /***************************************************************************
- * Usage notes - kostElements2StateVectorX and related functions:
+ * Usage notes - mKOST::Orbit::elements2StateVectorX and related methods:
  *
  * Parabolic orbits are NOT currently supported.
  *
  * Position as a function of time can be found by either:
  *
- * 1. A call to mKOST::elements2StateVector1. Depending on settings for
+ * 1. A call to mKOST::Orbit::elements2StateVector. Depending on settings for
  *    maxIterations and maxRelativeError, this may adversly affect frame
  *    rates in graphical applications.
  *
  * 2. To minimise impact on frame rates:
- *    2.1. Call mKOST::getMeanAnomaly
- *    2.2. Call mKOST::getEccentricAnomaly on successive time steps with a
+ *    2.1. Call mKOST::Orbit::getMeanAnomaly
+ *    2.2. Call mKOST::Orbit::getEccentricAnomaly on successive time steps with a
  *         small number of iterations in each call. Each call takes the
  *         result of the previous call as its eccentricAnomalyEstimate.
- *         Repeat until kostGetEccentricAnomaly returns > 0.
- *    2.3. Call mKOST::getTrueAnomaly2.
- *    2.4. Call mKOST::elements2StateVector2.
+ *         Repeat until mKOST::Orbit::GetEccentricAnomaly returns > 0.
+ *    2.3. Call mKOST::Orbit::getTrueAnomaly2.
+ *    2.4. Call mKOST::Orbit::elements2StateVector2.
  **************************************************************************/
 
 #include <stdio.h>
@@ -138,10 +48,10 @@ Added implementation of:
 
 namespace mKOST
 {
-  btVector3 Orbit::gete(btScalar mu, sStateVector state)
+  btVector3 Orbit::calc_e(btScalar mu, btVector3 pos, btVector3 vel)
   {
-    btVector3 h (state.pos.cross (state.vel));
-    return (state.vel.cross(h) / mu - state.pos / state.pos.length());
+    btVector3 h (pos.cross(vel));
+    return (vel.cross(h) / mu - pos / pos.length());
   }
 
   btVector3 Orbit::geth(sStateVector state)
@@ -577,7 +487,7 @@ namespace mKOST
     Alternative formula for e:
     e = (v x h) / μ - r / |r|
     */
-    btVector3 e (gete(mu, *state));
+    btVector3 e (calc_e(mu, state->pos, state->vel));
 
     btScalar abse (e.length());
     /* parabolic orbit are not supported */
