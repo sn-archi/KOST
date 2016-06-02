@@ -14,16 +14,17 @@ int testState (const mKOST::sStateVector* sv)
   btVector3 diff;
   btScalar error;
   int ret;
+  mKOST::Orbit* mOrbit = new mKOST::Orbit;
 
   /*Convert to orbital elements*/
-  if (mKOST::stateVector2Elements (MU, sv, &elements, NULL))
+  if (mOrbit->stateVector2Elements (MU, sv, &elements, NULL))
     return 1;
 
   /*Convert back to state vector*/
-  ret = mKOST::elements2StateVector (MU, &elements, &out, 10 * SIMD_EPSILON, 1000000);
+  ret = mOrbit->elements2StateVector (MU, &elements, &out, 10 * SIMD_EPSILON, 1000000);
 
   diff = sv->pos - out.pos;
-  error = (diff.length() / sv->pos.length());
+  error = diff.length();
 
   if (error > maxRerror)
     {
@@ -32,19 +33,15 @@ int testState (const mKOST::sStateVector* sv)
 
       printf ("New pos error max:\n"
               "     pos  = %e, %e, %e\n"
-              "     out  = %e, %e, %e\n"
-              "     diff = %e, %e, %e\n"
               "     vel  = %e, %e, %e\n"
               "     error = %f\n",
               sv->pos.getX(), sv->pos.getY(), sv->pos.getZ(),
-              out.pos.getX(), out.pos.getY(), out.pos.getZ(),
-              diff.getX(), diff.getY(), diff.getZ(),
               sv->vel.getX(), sv->vel.getY(), sv->vel.getZ(),
               maxRerror);
     }
 
   diff = sv->vel - out.vel;
-  error = (diff.length() / sv->vel.length());
+  error = diff.length();
 
   if (error > maxVerror)
     {
@@ -54,11 +51,9 @@ int testState (const mKOST::sStateVector* sv)
       printf ("New vel error max:\n"
               "     pos = %e, %e, %e\n"
               "     vel = %e, %e, %e\n"
-              "     diff = %e, %e, %e\n"
               "     error = %f\n",
               sv->pos.getX(), sv->pos.getY(), sv->pos.getZ(),
               sv->vel.getX(), sv->vel.getY(), sv->vel.getZ(),
-              diff.getX(), diff.getY(), diff.getZ(),
               maxVerror
              );
     }
@@ -69,7 +64,7 @@ int main (int argc, char* argv[])
 {
   int rx, ry, rz, vx, vy, vz;
   mKOST::sStateVector sv;
-  int rmin = 4, rmax = 12, vmin = 0, vmax = 5;
+  int rmin = 4, rmax = 10, vmin = 0, vmax = 4;
   int counter (0);
   int skipped (0);
 

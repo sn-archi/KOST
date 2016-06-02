@@ -15,32 +15,29 @@ int main (int argc, char* argv[])
   mKOST::sOrbitParam params, params2;
   double maxt;
   int foundroot;
+  mKOST::Orbit* mOrbit = new mKOST::Orbit;
 
   btVector3 output[N];
   unsigned int i = 0;
 
-//  /*Initial state at t=0*/
-//  initial.pos = btVector3 (-1.000000e+04, -1.000000e+08, -1.000000e+08);
-//  initial.vel = btVector3 (-1.000000e+01, -1.000000e+04, -1.000000e+04);
-
   /*Initial state at t=0*/
-  initial.pos = btVector3 (0.0, 0.0, -1.000000e+09);
-  initial.vel = btVector3 (0.0, 0.0, -1.000000e+05);
+  initial.pos = btVector3 (1.000000e+04, -1.000000e+10, 1.000000e+10);
+  initial.vel = btVector3 (-1.000000e+00, 1.000000e+04, 1.000000e+04);
 
   /*Convert to orbital elements*/
-  if (mKOST::stateVector2Elements (MU, &initial, &elements, &params))
+  if (mOrbit->stateVector2Elements (MU, &initial, &elements, &params))
     return 1;
 
-    printf ("initial:\n"
-          "  position: %e, %e, %e\n"
-          "  velocity: %e, %e, %e\n-----\n",
-          initial.pos.getX(),
-          initial.pos.getY(),
-          initial.pos.getZ(),
-          initial.vel.getX(),
-          initial.vel.getY(),
-          initial.vel.getZ()
-          );
+  printf ("initial:\n"
+        "  position: %e, %e, %e\n"
+        "  velocity: %e, %e, %e\n-----\n",
+        initial.pos.getX(),
+        initial.pos.getY(),
+        initial.pos.getZ(),
+        initial.vel.getX(),
+        initial.vel.getY(),
+        initial.vel.getZ()
+        );
 
   printf ("Orbital elements:\n"
           "     a = %e m\n"
@@ -68,7 +65,7 @@ int main (int argc, char* argv[])
           params.AgP
          );
 
-  if (!mKOST::elements2StateVector (MU, &elements, &out, 10 * SIMD_EPSILON, 1000000))
+  if (!mOrbit->elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000))
     printf ("Couldn't find a root\n");
   printf ("reversed:\n"
           "  position: %e, %e, %e\n"
@@ -81,7 +78,7 @@ int main (int argc, char* argv[])
           out.vel.getZ()
           );
 
-  mKOST::stateVector2Elements (MU, &out, &elements2, &params2);
+  mOrbit->stateVector2Elements (MU, &out, &elements2, &params2);
   printf ("Orbital elements:\n"
           "     a = %e m\n"
           "     e = %e\n"
@@ -122,7 +119,7 @@ int main (int argc, char* argv[])
 
       mKOST::sStateVector stateNow;
 
-      mKOST::elements2StateVectorAtTime (MU, &elements, &stateNow, t, 10* SIMD_EPSILON, 1000000, 0.0, 0.0);
+      mOrbit->elements2StateVectorAtTime (MU, &elements, &stateNow, t, SIMD_EPSILON, 1000000, 0.0, 0.0);
 
       output[i] = stateNow.pos;
     }

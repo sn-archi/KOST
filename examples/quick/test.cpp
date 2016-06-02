@@ -10,6 +10,7 @@ int main (int argc, char* argv[])
   mKOST::sStateVector out;
   mKOST::sElements elements, elements2;
   mKOST::sOrbitParam params;
+  mKOST::Orbit* mOrbit = new mKOST::Orbit;
 
   /*Alternative test, with an initial param list at t0*/
   elements.a = 5.799119e5;
@@ -19,17 +20,11 @@ int main (int argc, char* argv[])
   elements.LaN = 0.2;
   elements.L = 0.0;
 
-  for (btScalar LaN=0.0;LaN <= SIMD_2_PI;LaN+=0.05*SIMD_2_PI)
-  {
-    btScalar result = mKOST::getLaN(mKOST::getn(LaN));
-    printf ("LaN: %e, result: %e\n", LaN, result);
-  }
-
   /*Convert to orbital elements*/
-  //mKOST::elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000);
-  //mKOST::stateVector2Elements (MU, &out, &elements2, &params);
+  mOrbit->elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000);
+  mOrbit->stateVector2Elements (MU, &out, &elements2, &params);
 
-/*
+
   printf ("Orbital elements:\n"
           "     a = %f m\n"
           "     e = %f\n"
@@ -75,6 +70,5 @@ int main (int argc, char* argv[])
           out.vel.getY(),
           out.vel.getZ()
           );
-*/
   return 0;
 }
