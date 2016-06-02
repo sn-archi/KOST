@@ -67,6 +67,7 @@ int main (int argc, char* argv[])
 
   if (!mOrbit->elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000))
     printf ("Couldn't find a root\n");
+
   printf ("reversed:\n"
           "  position: %e, %e, %e\n"
           "  velocity: %e, %e, %e\n-----\n",
@@ -93,6 +94,7 @@ int main (int argc, char* argv[])
           elements2.LoP,
           elements2.L
          );
+
   printf ("Additional parameters:\n"
           "   PeD = %e m\n"
           "   ApD = %e m\n"
@@ -109,7 +111,6 @@ int main (int argc, char* argv[])
           params2.T,
           params2.AgP
          );
-
 
   maxt = 1.0 * params.T;
 

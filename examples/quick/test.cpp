@@ -24,7 +24,6 @@ int main (int argc, char* argv[])
   mOrbit->elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000);
   mOrbit->stateVector2Elements (MU, &out, &elements2, &params);
 
-
   printf ("Orbital elements:\n"
           "     a = %f m\n"
           "     e = %f\n"
@@ -44,6 +43,7 @@ int main (int argc, char* argv[])
           "     L = %f\n",
           elements2.a, elements2.e, elements2.i, elements2.LaN, elements2.LoP, elements2.L
          );
+
   printf ("Additional parameters:\n"
           "   PeD = %f m\n"
           "   ApD = %f m\n"
@@ -60,6 +60,7 @@ int main (int argc, char* argv[])
           params.T,
           params.AgP
          );
+
   printf ("state:\n"
           "  position: %f, %f, %f\n"
           "  velocity: %f, %f, %f\n",
