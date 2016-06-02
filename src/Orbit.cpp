@@ -18,27 +18,6 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-/***************************************************************************
- * Usage notes - mKOST::Orbit::elements2StateVectorX and related methods:
- *
- * Parabolic orbits are NOT currently supported.
- *
- * Position as a function of time can be found by either:
- *
- * 1. A call to mKOST::Orbit::elements2StateVector. Depending on settings for
- *    maxIterations and maxRelativeError, this may adversly affect frame
- *    rates in graphical applications.
- *
- * 2. To minimise impact on frame rates:
- *    2.1. Call mKOST::Orbit::getMeanAnomaly
- *    2.2. Call mKOST::Orbit::getEccentricAnomaly on successive time steps with a
- *         small number of iterations in each call. Each call takes the
- *         result of the previous call as its eccentricAnomalyEstimate.
- *         Repeat until mKOST::Orbit::GetEccentricAnomaly returns > 0.
- *    2.3. Call mKOST::Orbit::getTrueAnomaly2.
- *    2.4. Call mKOST::Orbit::elements2StateVector2.
- **************************************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <cmath>
