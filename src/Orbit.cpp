@@ -668,4 +668,267 @@ namespace mKOST
     if (params->ApT < 0.0) params->ApT += params->T;
     return 0;
   }
+
+    void Orbit::elements2Shape (const sElements* elements, sOrbitShape* shape)
+  {
+    unsigned int i = 0;
+
+    /*Some utility values: */
+    btScalar multiplier = elements->a * (1.0 - elements->e * elements->e);
+    btScalar AgP = elements->LoP - elements->LaN;
+
+    /*
+    First: Orbit in its own coordinate system:
+    */
+
+    /*Pe, Ap*/
+    shape->pe = btVector3 ( elements->a * (1.0 - elements->e), 0.0, 0.0);
+    shape->ap = btVector3 (-elements->a * (1.0 + elements->e), 0.0, 0.0);
+
+    /*Points*/
+    if (shape->numPoints == 1)
+    {
+      shape->points[0] = shape->pe;
+    }
+    else if (shape->numPoints > 1)
+    {
+      btScalar maxTrA, dTrA, TrA;
+
+      /*Range of angles*/
+      maxTrA = SIMD_PI;
+      if (elements->e >= 1.0)
+        {
+          maxTrA = std::acos (-1.0 / elements->e);
+
+          /*Make it a bit smaller to avoid division by zero:*/
+          maxTrA *= ( ( (btScalar) shape->numPoints) / (shape->numPoints + 1) );
+        }
+
+      /*Angle change per segment*/
+      dTrA = (2 * maxTrA) / (shape->numPoints - 1);
+
+      TrA = -maxTrA;
+      for (i = 0; i < shape->numPoints; i++)
+      {
+        btScalar absr = std::fabs (multiplier / (1.0 + elements->e * std::cos (TrA) ) );
+
+        btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
+        shape->points[i] = absr * direction;
+
+        TrA += dTrA;
+      }
+    }
+
+
+    /*AN*/
+    {
+      btScalar TrA = -AgP;
+      btScalar absr = multiplier / (1.0 + elements->e * std::cos (TrA) );
+
+      if (absr <= 0.0)
+      {
+        shape->an = btVector3 (0.0, 0.0, 0.0);
+      }
+      else
+      {
+        btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
+        shape->an = absr * direction;
+      }
+    }
+
+    /*DN*/
+    {
+      btScalar TrA = SIMD_PI - AgP;
+      btScalar absr = multiplier / (1.0 + elements->e * std::cos (TrA) );
+
+      if (absr <= 0.0)
+      {
+        shape->dn = btVector3 (0.0, 0.0, 0.0);
+      }
+      else
+      {
+        btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
+        shape->dn = absr * direction;
+      }
+    }
+
+    /*
+    Then: rotate the coordinates:
+    */
+    {
+      btMatrix3x3 AgPMat, LANMat, IncMat, transform;
+
+      AgPMat.setEulerZYX (0.0, AgP, 0.0);
+      IncMat.setEulerZYX (elements->i, 0.0, 0.0);
+      LANMat.setEulerZYX (0.0, elements->LaN, 0.0);
+
+      /* Now, global = LANMat * IncMat * AgPMat * local: */
+      transform = LANMat * IncMat;
+      transform *= AgPMat;
+
+      shape->pe = transform * shape->pe;
+      shape->ap = transform * shape->ap;
+      shape->an = transform * shape->an;
+      shape->dn = transform * shape->dn;
+
+      if (shape->numPoints != 0)
+        for (i = 0; i < shape->numPoints; i++)
+          shape->points[i] = transform * shape->points[i];
+    }
+  }
+    btScalar Orbit::getMeanAnomalyAtTime (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    btScalar timeSinceEpoch)      /* time since epoch in seconds */
+  {
+    /* Pseudocode
+     *
+     * calc mean motion
+     * calc change in mean anomaly
+     * calc mean anomaly */
+
+    btScalar meanMotion, deltaMeanAnomaly, meanAnomaly;
+
+    /* calc mean motion */
+    meanMotion = std::sqrt (mu / std::pow (std::fabs (elements->a), 3.0) );
+
+    /* calc change in mean anomaly */
+    deltaMeanAnomaly = timeSinceEpoch * meanMotion;
+
+    /* calc mean anomaly */
+    /* fmod takes care of overflow in the case where the mean anomaly exceeds one revolution */
+    meanAnomaly = std::fmod (elements->L - elements->LoP + deltaMeanAnomaly, SIMD_2_PI);
+
+    if (meanAnomaly < 0) meanAnomaly += SIMD_2_PI;
+
+    return meanAnomaly;
+  }
+
+  int Orbit::getTrueAnomalyAtTime (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    btScalar* trueAnomaly,        /* location where result will be stored */
+    btScalar timeSinceEpoch,      /* time since epoch in seconds */
+    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+    int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
+  {
+    /* Returns number of iterations if successful, returns 0 otherwise. */
+
+    /* Pseudocode
+     *
+     * get mean anomaly
+     * get eccentric anomaly
+     * calc true anomaly */
+
+    int ret;
+    btScalar meanAnomaly, eccentricAnomaly;
+
+    /* get mean anomaly */
+    meanAnomaly = getMeanAnomalyAtTime (mu, elements, timeSinceEpoch);
+
+    /* get eccentric anomaly */
+    ret = getEccentricAnomaly (elements, &eccentricAnomaly, meanAnomaly, meanAnomaly, maxRelativeError, maxIterations);
+
+    /* calc true anomaly */
+    *trueAnomaly = getTrueAnomaly2 (mu, elements, eccentricAnomaly);
+
+    return ret;
+  }
+
+  btScalar Orbit::getLANAtTime (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
+    btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
+    btScalar timeSinceEpoch)      /* time since epoch in seconds */
+  {
+    btScalar meanMotion;
+
+    if (elements->e < 1.0) /* elliptical orbit */
+      {
+        meanMotion = std::sqrt (mu / pow (elements->a, 3.0) );
+        return ( elements->LaN + timeSinceEpoch * (-3.0 * meanMotion / 2.0) * pow (bodyRadius / elements->a, 2.0) * (cos (elements->i) / pow (1.0 - pow (elements->e, 2.0), 2.0) ) * jTwoCoeff );
+      }
+    else /* hyperbolic orbit - non spherical effect is negligible */
+      return elements->LaN;
+  }
+
+  btScalar Orbit::getArgPeAtTime (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
+    btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
+    btScalar timeSinceEpoch)      /* time since epoch in seconds */
+  {
+    btScalar meanMotion;
+
+    if (elements->e < 1.0) /* elliptical orbit */
+      {
+        meanMotion = std::sqrt (mu / std::pow (elements->a, 3.0) );
+        return ( elements->LoP - elements->LaN + timeSinceEpoch * (3.0 * meanMotion / 4.0) * std::pow (bodyRadius / elements->a, 2.0) * ( (5.0 * std::pow (std::cos (elements->i),
+                 2.0) - 1.0) / std::pow (1.0 - std::pow (elements->e, 2.0), 2.0) ) * jTwoCoeff );
+      }
+    else /* hyperbolic orbit - non spherical effect is negligible */
+      return ( elements->LoP - elements->LaN );
+  }
+
+  int Orbit::elements2StateVectorAtTime (
+    btScalar mu,                  /* standard gravitational parameter */
+    const sElements* elements, /* pointer to orbital elements at epoch */
+    sStateVector* state,       /* pointer to location where state vectors at epoch+timeSinceEpoch will be stored */
+    btScalar timeSinceEpoch,      /* time since epoch in seconds */
+    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
+    int maxIterations,            /* max number of iterations for calculating eccentric anomaly */
+    btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
+    btScalar jTwoCoeff)           /* J2 coefficient of the non-spherical body being orbited */
+  {
+    /* Returns number of iterations if successful, returns 0 otherwise. */
+
+    /* Pseudocode
+     *
+     * get true anomaly
+     * get longitude of ascending node and argument of periapsis
+     * calc state vectors */
+
+    int ret;
+    btScalar trueAnomaly;
+    sElements updatedElements;
+
+    /* get true anomaly */
+    ret = getTrueAnomalyAtTime (mu, elements, &trueAnomaly, timeSinceEpoch, maxRelativeError, maxIterations);
+
+    /* update elements for new epoch */
+    getElementsAtTime (mu, elements, &updatedElements, timeSinceEpoch, bodyRadius, jTwoCoeff);
+
+    /* calc state vectors */
+    elements2StateVector2 (mu, &updatedElements, state, trueAnomaly);
+
+    return ret;
+  }
+
+  void Orbit::getElementsAtTime (
+    btScalar mu,                     /* standard gravitational parameter */
+    const sElements* elements,    /* pointer to orbital elements at epoch */
+    sElements* newElements,       /* pointer to location where elements at epoch+timeSinceEpoch will be stored */
+    btScalar timeSinceEpoch,         /* time since epoch in seconds */
+    btScalar bodyRadius,             /* mean radius of the non-spherical body being orbited */
+    btScalar jTwoCoeff)              /* J2 coefficient of the non-spherical body being orbited */
+  {
+    *newElements = *elements;
+
+    /* Mean longitude: */
+    newElements->L = getMeanAnomalyAtTime (mu, newElements, timeSinceEpoch) + newElements->LoP;
+
+    if (bodyRadius > SIMD_EPSILON)
+      {
+        /* longitude of ascending node */
+        newElements->LaN =
+          getLANAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
+
+        /* argument of periapsis */
+        newElements->LoP =
+          newElements->LaN +
+          getArgPeAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
+      }
+  }
 }
