@@ -39,3 +39,4 @@ test.plot
 CppCheckResults.xml
 doc/html/
 doc/latex/
+doc/doxygen.log
