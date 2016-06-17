@@ -7,22 +7,19 @@
 
 int main (int argc, char* argv[])
 {
-  mKOST::sStateVector out;
-  mKOST::sElements elements, elements2;
-  mKOST::sOrbitParam params;
-  mKOST::Orbit* mOrbit = new mKOST::Orbit;
-
-  /*Alternative test, with an initial param list at t0*/
+  /** Alternative test, with an initial param list at t0 */
+  mKOST::Elements elements;
   elements.a = 5.799119e5;
-  elements.e = 0.9;
+  elements.Ecc = 0.5;
   elements.i = SIMD_PI / 4;
   elements.LoP = SIMD_PI / 4;
-  elements.LaN = 0.2;
-  elements.L = 0.0;
+  elements.LAN = 0.0;
+  elements.L = SIMD_HALF_PI;
 
-  /*Convert to orbital elements*/
-  mOrbit->elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000);
-  mOrbit->stateVector2Elements (MU, &out, &elements2, &params);
+  mKOST::Orbit mOrbit (MU, &elements);
+
+  /** Convert to orbital elements */
+  mOrbit.elements2StateVector (SIMD_EPSILON, 1000000);
 
   printf ("Orbital elements:\n"
           "     a = %f m\n"
@@ -31,19 +28,10 @@ int main (int argc, char* argv[])
           " theta = %f\n"
           "omegab = %f\n"
           "     L = %f\n",
-          elements.a, elements.e, elements.i, elements.LaN, elements.LoP, elements.L
+          elements.a, elements.Ecc, elements.i, elements.LAN, elements.LoP, elements.L
          );
 
-  printf ("Orbital elements reversed:\n"
-          "     a = %f m\n"
-          "     e = %f\n"
-          "     i = %f\n"
-          " theta = %f\n"
-          "omegab = %f\n"
-          "     L = %f\n",
-          elements2.a, elements2.e, elements2.i, elements2.LaN, elements2.LoP, elements2.L
-         );
-
+  mKOST::Params params (mOrbit.getParams());
   printf ("Additional parameters:\n"
           "   PeD = %f m\n"
           "   ApD = %f m\n"
@@ -61,6 +49,37 @@ int main (int argc, char* argv[])
           params.AgP
          );
 
+  mOrbit.stateVector2Elements ();
+  mKOST::Elements elements2 (mOrbit.getElements());
+  printf ("Orbital elements reversed:\n"
+          "     a = %f m\n"
+          "     e = %f\n"
+          "     i = %f\n"
+          " theta = %f\n"
+          "omegab = %f\n"
+          "     L = %f\n",
+          elements2.a, elements2.Ecc, elements2.i, elements2.LAN, elements2.LoP, elements2.L
+         );
+
+  params = mOrbit.getParams();
+  printf ("Additional parameters:\n"
+          "   PeD = %f m\n"
+          "   ApD = %f m\n"
+          "   MnA = %f\n"
+          "   TrA = %f\n"
+          "   EcA = %f\n"
+          "     T = %f s\n"
+          "   AgP = %f\n",
+          params.PeD,
+          params.ApD,
+          params.MnA,
+          params.TrA,
+          params.EcA,
+          params.T,
+          params.AgP
+         );
+
+  mKOST::StateVectors out (mOrbit.getStateVectors());
   printf ("state:\n"
           "  position: %f, %f, %f\n"
           "  velocity: %f, %f, %f\n",

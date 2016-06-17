@@ -18,843 +18,711 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <cmath>
-#include <iostream>
-
 #include "Orbit.h"
 
 namespace mKOST
 {
-  btVector3 Orbit::calc_e(btScalar mu, btVector3 pos, btVector3 vel)
+  Orbit::Orbit (void)
+    : mu         (0.0),
+      mElements  (new Elements),
+      mParams    (new Params),
+      mShape     (new OrbitShape),
+      n          (new btVector3),
+      e          (new btVector3),
+      Circular   (false),
+      Hyperbola  (false),
+      Equatorial (false)
   {
-    btVector3 h (pos.cross(vel));
-    return (vel.cross(h) / mu - pos / pos.length());
   }
 
-  btVector3 Orbit::geth(sStateVector state)
+  Orbit::Orbit (btScalar mu, StateVectors* state)
+    : mu         (mu),
+      mElements  (new Elements),
+      mParams    (new Params),
+      mShape     (new OrbitShape),
+      n          (new btVector3),
+      e          (new btVector3),
+      Circular   (false),
+      Hyperbola  (false),
+      Equatorial (false)
   {
-    return state.pos.cross (state.vel);
+    refreshFromStateVectors(state);
   }
 
-  btVector3 Orbit::getn(btVector3 h)
+  Orbit::Orbit (btScalar mu, Elements* elements)
+    : mu         (mu),
+      mElements  (elements),
+      mParams    (new Params),
+      mShape     (new OrbitShape),
+      n          (new btVector3),
+      e          (new btVector3),
+      Circular   (false),
+      Hyperbola  (false),
+      Equatorial (false)
   {
-    return btVector3 (0.0, 1.0, 0.0).cross (h);
   }
 
-  btVector3 Orbit::getn(btScalar LaN)
+  Orbit::~Orbit ()
   {
-    return btVector3 (std::cos (LaN), 0.0, -std::sin (LaN));
+    delete mElements;
+    delete mParams;
+    delete mShape;
+    delete e;
+    delete n;
   }
 
-  btScalar Orbit::getLaN(btVector3 n)
+  void Orbit::calcE (StateVectors* state)
   {
-    if (n.length() < SIMD_EPSILON)
+    btVector3 h (calcH(state));
+    *e = state->vel.cross(h) / mu - state->pos / state->pos.length();
+  }
+
+  btVector3 Orbit::calcH (StateVectors* state)
+  {
+    btVector3 h (state->pos.cross (state->vel));
+    return h;
+  }
+
+  void Orbit::calcN(btVector3 *h)
+  {
+    *n = btVector3(0.0, 1.0, 0.0).cross (*h);
+  }
+
+  void Orbit::calcN ()
+  {
+    *n = btVector3(std::cos (mElements->LAN), 0.0, -std::sin (mElements->LAN));
+  }
+
+  btScalar Orbit::calcLAN()
+  {
+    if (n->length() < SIMD_EPSILON)
     {
       return 0.0;
     }
     else
     {
-      btScalar LaN = std::acos (n.getX() / n.length());
-      return (n.getZ() > 0.0)?SIMD_2_PI - LaN:LaN;
+      btScalar LAN (std::acos (n->getX() / n->length()));
+      return (n->getZ() > 0.0)?SIMD_2_PI - LAN:LAN;
     }
   }
 
-  btScalar Orbit::getMeanAnomaly (
-    btScalar mu,                   /* standard gravitational parameter */
-    const sElements* elements)   /* pointer to orbital elements at epoch */
+  btScalar Orbit::calcMnA (btScalar MeL)
   {
-    btScalar meanAnomaly;
-    /* calc mean anomaly */
-    meanAnomaly = elements->L - elements->LoP;
+    btScalar meanAnomaly (MeL - mElements->LoP);
 
-    if (elements->e < 1.0)
-      {
-        /* check range is in 0 to 2π */
-        if (meanAnomaly < 0.0) meanAnomaly += SIMD_2_PI;
-        if (meanAnomaly >  SIMD_2_PI) meanAnomaly -= SIMD_2_PI;
-      }
-
+    if (mElements->Ecc < 1.0)
+    {
+      /* check range is in 0 to 2π */
+      if (meanAnomaly < 0.0) meanAnomaly += SIMD_2_PI;
+      if (meanAnomaly >= SIMD_2_PI) meanAnomaly -= SIMD_2_PI;
+    }
     return meanAnomaly;
   }
 
-  int Orbit::getEccentricAnomaly (
-    const sElements* elements,      /* pointer to orbital elements at epoch */
-    btScalar* eccentricAnomaly,        /* location where result will be stored */
-    btScalar meanAnomaly,              /* mean anomaly */
-    btScalar eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
-    btScalar maxRelativeError,         /* maximum relative error in eccentric anomaly */
-    int maxIterations)                 /* max number of iterations for calculating eccentric anomaly */
+  btScalar Orbit::calcMnA ()
   {
-    /* Code will terminate when either maxIterations or maxRelativeError is reached.
-     * Returns number of iterations if relativeError < maxRelativeError, returns 0 otherwise. */
-
-    /* Pseudocode
-     *
-     * do
-     *  calculate next estimate of the root of Kepler's equation using Newton's method
-     *  calculate estimate of mean anomaly from estimate of eccentric anomaly
-     *  calculate relativeError
-     * while ((iterations<=maxIterations)&&(relativeError<maxRelativeError))
-     * if iterations<=maxIterations return iterations, else return 0 */
-
-    int i (0);
-    btScalar relativeError, meanAnomalyEstimate, e;
-
-    if (elements->e == 0.0)   /* circular orbit */
-      {
-        *eccentricAnomaly = meanAnomaly;
-        return 1;
-      }
-
-    if (elements->e == 1.0) /* parabolic orbit - approximate to hyperbolic */
-      e = elements->e + SIMD_EPSILON;
+    if (Hyperbola)
+    {
+      btScalar meanAnomaly (mElements->Ecc * std::sinh(mParams->EcA) - mParams->EcA);
+      return meanAnomaly;
+    }
     else
-      e = elements->e;
-
-    do
-      {
-        if (elements->e < 1.0)   /* elliptical orbit */
-          {
-            /* calculate next estimate of the root of Kepler's equation using Newton's method */
-            eccentricAnomalyEstimate = eccentricAnomalyEstimate - (eccentricAnomalyEstimate - e * std::sin (eccentricAnomalyEstimate) - meanAnomaly) / (1.0 - e * std::cos (eccentricAnomalyEstimate) );
-            /* calculate estimate of mean anomaly from estimate of eccentric anomaly */
-            meanAnomalyEstimate = eccentricAnomalyEstimate - e * std::sin (eccentricAnomalyEstimate);
-          }
-        else   /* hyperbolic orbit */
-          {
-            /* calculate next estimate of the root of Kepler's equation using Newton's method */
-            eccentricAnomalyEstimate = eccentricAnomalyEstimate - (e * std::sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate - meanAnomaly) / (e * std::cosh (eccentricAnomalyEstimate) - 1.0);
-            /* calculate estimate of mean anomaly from estimate of eccentric anomaly */
-            meanAnomalyEstimate = e * std::sinh (eccentricAnomalyEstimate) - eccentricAnomalyEstimate;
-          }
-        /* calculate relativeError */
-        relativeError = 1.0 - meanAnomalyEstimate / meanAnomaly;
-        ++i;
-      }
-    while ( (i < maxIterations) && (fabs (relativeError) > fabs (maxRelativeError) ) );
-
-    if (elements->e < 1.0)
-      {
-        /* check range is in 0 to 2π */
-        eccentricAnomalyEstimate = fmod (eccentricAnomalyEstimate, SIMD_2_PI);
-        if (eccentricAnomalyEstimate < 0.0) eccentricAnomalyEstimate += SIMD_2_PI;
-        if (eccentricAnomalyEstimate > SIMD_2_PI) eccentricAnomalyEstimate -= SIMD_2_PI;
-      }
-
-    *eccentricAnomaly = eccentricAnomalyEstimate;
-
-    if ( fabs (relativeError) < fabs (maxRelativeError) )
-      return i;
-    else
-      return 0;
+    {
+      btScalar meanAnomaly (mParams->EcA - mElements->Ecc * std::sin(mParams->EcA));
+      return meanAnomaly;
+    }
   }
 
-  int Orbit::getTrueAnomaly (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements,    /* pointer to orbital elements at epoch */
-    btScalar* trueAnomaly,        /* location where result will be stored */
-    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
-    int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
+  btScalar Orbit::calcEcA (
+    btScalar meanAnomaly,       /* mean anomaly */
+    btScalar ecaEstimate,       /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
+    btScalar maxRelativeError,  /* maximum relative error in eccentric anomaly */
+    int maxIterations)          /* max number of iterations for calculating eccentric anomaly */
   {
-    /* Returns number of iterations if successful, returns 0 otherwise. */
+    if (Circular)
+      {
+        return meanAnomaly;
+      }
 
-    /* Pseudocode
-     *
-     * get mean anomaly
-     * get eccentric anomaly
-     * calc true anomaly */
+    /** parabolic orbit - approximate to hyperbolic */
+    if (mElements->Ecc == 1.0) mElements->Ecc += SIMD_EPSILON;
 
-    int ret;
+    btScalar relativeError, mnaEstimate;
+    int i (0);
+    do
+      {
+        if (!Circular && !Hyperbola)   /** elliptical orbit */
+          {
+            /** calculate next estimate of the root of Kepler's equation using Newton's method */
+            ecaEstimate = ecaEstimate - (ecaEstimate - mElements->Ecc * std::sin (ecaEstimate) - meanAnomaly) / (1.0 - mElements->Ecc * std::cos (ecaEstimate));
+            /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
+            mnaEstimate = ecaEstimate - mElements->Ecc * std::sin (ecaEstimate);
+          }
+        else   /** hyperbolic orbit */
+          {
+            /** calculate next estimate of the root of Kepler's equation using Newton's method */
+            ecaEstimate = ecaEstimate - (mElements->Ecc * std::sinh (ecaEstimate) - ecaEstimate - meanAnomaly) / (mElements->Ecc * std::cosh (ecaEstimate) - 1.0);
+            /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
+            mnaEstimate = mElements->Ecc * std::sinh (ecaEstimate) - ecaEstimate;
+          }
+        /** calculate relativeError */
+        relativeError = 1.0 - mnaEstimate / meanAnomaly;
+        ++i;
+      }
+    while ( (i < maxIterations) && (std::fabs (relativeError) > std::fabs (maxRelativeError) ) );
+
+    if (!Hyperbola)
+      {
+        /** check range is in 0 to 2π */
+        ecaEstimate = std::fmod (ecaEstimate, SIMD_2_PI);
+        if (ecaEstimate < 0.0) ecaEstimate += SIMD_2_PI;
+        if (ecaEstimate >= SIMD_2_PI) ecaEstimate -= SIMD_2_PI;
+      }
+
+    if ( std::fabs (relativeError) < std::fabs (maxRelativeError) )
+      return ecaEstimate;
+    else
+      throw "No acceptable solution found";
+  }
+
+  void Orbit::calcTrA(StateVectors* state)
+  {
+    if (Circular)
+    {
+      if (Equatorial)
+      {
+        mParams->TrA = std::acos (state->pos.getX() / state->pos.length());
+        if (state->vel.getX() > 0.0) mParams->TrA = SIMD_2_PI - mParams->TrA;
+      }
+      else
+      {
+        mParams->TrA = std::acos (n->dot (state->pos)) / (n->length() * state->pos.length());
+        if (n->dot (state->vel) > 0.0) mParams->TrA = SIMD_2_PI - mParams->TrA;
+      }
+    }
+    else
+    {
+      btScalar tmp = e->dot (state->pos) / (mElements->Ecc * state->pos.length());
+
+      /* Avoid acos out of range. 1 and -1 are included cause we know the result. */
+      if (tmp <= -1.0) mParams->TrA = SIMD_PI;
+      else if (tmp >= 1.0) mParams->TrA = 0.0;
+      else mParams->TrA = std::acos (tmp);
+
+      /* Changing sin_TrA_isNegative on a negative epsilon value doesn't seem right */
+      if (state->pos.dot (state->vel) < 0.0) mParams->TrA = SIMD_2_PI - mParams->TrA;
+    }
+  }
+
+  btScalar Orbit::calcTrA (btScalar MeL, btScalar maxRelativeError, int maxIterations)
+  {
     btScalar meanAnomaly, eccentricAnomaly;
 
     /* get mean anomaly */
-    meanAnomaly = getMeanAnomaly (mu, elements);
+    meanAnomaly = calcMnA(MeL);
 
     /* get eccentric anomaly */
-    if (elements->e < 1.0)
-      {
-        ret = getEccentricAnomaly (
-                elements, &eccentricAnomaly,
-                meanAnomaly, meanAnomaly,
-                maxRelativeError, maxIterations);
-      }
+    if (mElements->Ecc < 1.0)
+    {
+      eccentricAnomaly = calcEcA (meanAnomaly,
+               meanAnomaly,
+               maxRelativeError,
+               maxIterations);
+    }
     else
-      {
-        ret = getEccentricAnomaly (
-                elements, &eccentricAnomaly,
-                meanAnomaly, std::log (2.0 * meanAnomaly / elements->e + 1.8),
-                maxRelativeError, maxIterations);
-      }
+    {
+      eccentricAnomaly = calcEcA (meanAnomaly,
+               std::log (2.0 * meanAnomaly / mElements->Ecc + 1.8),
+               maxRelativeError,
+               maxIterations);
+    }
 
     /* calc true anomaly */
-    *trueAnomaly = getTrueAnomaly2 (mu, elements, eccentricAnomaly);
-
-    return ret;
+    return calcTrA (eccentricAnomaly);
   }
 
-  btScalar Orbit::getTrueAnomaly2 (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    btScalar eccentricAnomaly)    /* eccentric anomaly */
+  btScalar Orbit::calcTrA (btScalar eccentricAnomaly)
   {
     btScalar ret;
-    if (elements->e < 1.0)   /* elliptical orbit */
-      {
-        ret = 2.0 * std::atan (std::sqrt ( (1.0 + elements->e) / (1.0 - elements->e) ) * std::tan (eccentricAnomaly / 2.0) );
-      }
+    if (mElements->Ecc < 1.0)   /* elliptical orbit */
+    {
+      ret = 2.0 * std::atan (std::sqrt ( (1.0 + mElements->Ecc) / (1.0 - mElements->Ecc) ) * std::tan (eccentricAnomaly / 2.0) );
+    }
     else   /* hyperbolic orbit */
-      {
-        ret = std::acos ( (std::cosh (eccentricAnomaly) - elements->e) / (1 - elements->e * std::cosh (eccentricAnomaly) ) );
-        if (eccentricAnomaly < 0.0) ret = -ret; /* Always the same sign */
-      }
-
+    {
+      ret = std::acos ( (std::cosh (eccentricAnomaly) - mElements->Ecc) / (1 - mElements->Ecc * std::cosh (eccentricAnomaly) ) );
+      if (eccentricAnomaly < 0.0) ret = -ret; /* Always the same sign */
+    }
     return ret;
   }
 
-  btScalar Orbit::getAgP (btVector3 e, btVector3 n, btVector3 h, bool isCircular, bool isEquatorial)
+  btScalar Orbit::calcAgP (btVector3 *h)
   {
-    if (isCircular)
-      {
-        return 0.0;
-      }
-    else if (isEquatorial)
-      {
-        btScalar AgP (atan2 (e.getZ(), e.getX()));
-        return (h.getY() < 0.0)?-AgP:AgP;
-      }
-    else
-      {
-        btScalar AgP (std::acos (n.dot (e) / (n.length() * e.length())));
-        return (e.getY() < 0.0)?SIMD_2_PI - AgP:AgP;
-      }
-  }
-
-  btScalar Orbit::getTrAFromState(btVector3 pos, btVector3 vel, btVector3 n, btVector3 e, bool isCircular, bool isEquatorial, bool* sin_TrA_isNegative)
-  {
-    btScalar TrA (0.0);
-    if (isCircular)
+    btScalar AgP (0.0);
+    if (Circular)
     {
-      if (isEquatorial)
-      {
-        TrA = std::acos (pos.getX() / pos.length());
-        if (vel.getX() > 0.0)
-        {
-          *sin_TrA_isNegative = true;
-          TrA = SIMD_2_PI - TrA;
-        }
-      }
-      else
-      {
-        TrA = std::acos (n.dot (pos) ) / (n.length() * pos.length());
-        if (n.dot (vel) > 0.0)
-        {
-          *sin_TrA_isNegative = true;
-          TrA = SIMD_2_PI - TrA;
-        }
-      }
+      return AgP;
+    }
+    else if (Equatorial)
+    {
+      btScalar AgP (atan2 (e->getZ(), e->getX()));
+      return (h->getY() < 0.0)?-AgP:AgP;
     }
     else
     {
-      btScalar tmp = e.dot (pos) / (e.length() * pos.length());
+      btScalar AgP (std::acos (n->dot (*e) / (n->length() * e->length())));
+      return (e->getY() < 0.0)?SIMD_2_PI - AgP:AgP;
+    }
+  }
 
-      /* Avoid acos out of range. 1 and -1 are included cause we know the result. */
-      if (tmp <= -1.0)
+  btScalar Orbit::calcEcA(StateVectors* state)
+  {
+    btScalar eccentricAnomaly (0.0);
+    btScalar cosEccentricAnomaly ((1.0 - state->pos.length() / mElements->a) / mElements->Ecc);
+    if (Hyperbola)
+    {
+      /*Avoid acosh out of range:*/
+      if (cosEccentricAnomaly <= 1.0)
       {
-        TrA = SIMD_PI;
-      }
-      else if (tmp >= 1.0)
-      {
-        TrA = 0.0;
+        return eccentricAnomaly;
       }
       else
       {
-        TrA = std::acos (tmp);
-      }
-
-      /* Changing sin_TrA_isNegative on a negative epsilon value doesn't seem right */
-      if (pos.dot (vel) + SIMD_EPSILON < 0.0)
-      {
-        *sin_TrA_isNegative = true;
-        TrA = SIMD_2_PI - TrA;
+        eccentricAnomaly = std::acosh (cosEccentricAnomaly);
       }
     }
-    return TrA;
+    else if (Circular) mParams->EcA = 0.0;
+    else
+    {
+      /* Avoid acos out of range. 1 and -1 are included cause we now the result. */
+      if (cosEccentricAnomaly <= -1.0)
+      {
+        eccentricAnomaly = SIMD_PI;
+      }
+      else if (cosEccentricAnomaly >= 1.0)
+      {
+        eccentricAnomaly = 0.0;
+      }
+      else
+      {
+        eccentricAnomaly = std::acos (cosEccentricAnomaly);
+      }
+    }
+
+    /*Copy sign from sin(TrA)*/
+    if (Hyperbola && ((std::sin(mParams->TrA) < 0.0) != (eccentricAnomaly < 0.0))) eccentricAnomaly = -eccentricAnomaly;
+    /*Same rule basically, but with eccentricAnomaly in 0..2π range*/
+    else if ((std::sin(mParams->TrA) < 0.0)) eccentricAnomaly = SIMD_2_PI - eccentricAnomaly;
+    return eccentricAnomaly;
   }
 
-  void Orbit::elements2StateVector2 (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    sStateVector* state,       /* pointer to location where state vector at epoch will be stored */
-    btScalar trueAnomaly)         /* true anomaly */
+  StateVectors Orbit::elements2StateVector (btScalar trueAnomaly)
   {
-    /* Pseudocode
-     *
-     * calc nodal vector, n
-     * calc angular momentum vector, h
-     * calc position vector
-     * calc argument of position
-     * calc direction of position vector
-     * calc length of position vector
-     * calc velocity vector
-     * calculate magnitude of velocity vector
-     * calc components of velocity vector perpendicular and parallel to radius vector
-     * add to get velocity vector */
-
-    /* eccentricity */
-    btScalar e (elements->e);
-    if (e == 1.0) /* parabolic orbit - approximate to hyperbolic orbit */
+    /** parabolic orbit - approximate to hyperbolic orbit */
+    if (mElements->Ecc == 1.0)
     {
-      e += SIMD_EPSILON;
+      mElements->Ecc += SIMD_EPSILON;
     }
 
-    /* unit vector in direction of ascending node */
-    btVector3 n (getn (elements->LaN));
+    /** unit vector in direction of ascending node */
+    calcN();
 
-    /* unit vector pointing ecliptic north */
+    /** unit vector pointing ecliptic north */
     btVector3 north (btVector3 (0.0, 1.0, 0.0));
 
-    /* calc angular momentum vector, h */
-    /* projection of h in ecliptic (xz) plane */
-    btVector3 h (n.cross (north));
-    h *= std::sin(elements->i);
-    /* elevation of h */
-    h.setY (std::cos(elements->i));
+    /** calc angular momentum vector, h */
+    /** projection of h in ecliptic (xz) plane */
+    btVector3 h (n->cross (north));
+    h *= std::sin(mElements->i);
+    /** elevation of h */
+    h.setY (std::cos(mElements->i));
     h.normalize();
-    /* calc magnitude of h */
+    /** calc magnitude of h */
 
-    /* calc radius and velocity at periapsis */
+    /** calc radius and velocity at periapsis */
     btScalar rPe, vPe;
-    if (e < 1.0)   /* elliptical orbit */
+    if (mElements->Ecc < 1.0)   /** elliptical orbit */
       {
-        rPe = elements->a * (1.0 - e * e) / (1.0 + e);
-        vPe = std::sqrt (mu * (2.0 / rPe - 1.0 / elements->a) );
+        rPe = mElements->a * (1.0 - mElements->Ecc * mElements->Ecc) / (1.0 + mElements->Ecc);
+        vPe = std::sqrt (mu * (2.0 / rPe - 1.0 / mElements->a));
       }
-    else   /* hyperbolic orbit */
+    else   /** hyperbolic orbit */
       {
-        rPe = std::fabs (elements->a) * (e * e - 1.0) / (1.0 + e);
-        vPe = std::sqrt (mu * (2.0 / rPe + 1.0 / std::fabs (elements->a) ) );
+        rPe = std::fabs (mElements->a) * (mElements->Ecc * mElements->Ecc - 1.0) / (1.0 + mElements->Ecc);
+        vPe = std::sqrt (mu * (2.0 / rPe + 1.0 / std::fabs (mElements->a)));
       }
-    /* calc h */
+    /** calc h */
     h *= rPe * vPe;
 
-    /* calc position vector */
-    /* argument of position, measured from the longitude of ascending node */
-    btScalar argPos (elements->LoP - elements->LaN + trueAnomaly);
+    /** calc position vector */
+    /** argument of position, measured from the longitude of ascending node */
+    btScalar argPos (mElements->LoP - mElements->LAN + trueAnomaly);
 
-    /*
-    calc direction of position vector:
-    r/|r| = sin(ArgPos) * ((h / |h|) x n) + cos(argPos) * n
-    */
-    state->pos = std::sin(argPos) * h.normalized().cross(n) + std::cos(argPos) * n;
-    //btVector3 tmpv (std::cos(argPos) * n);
-    //state->pos = h.normalized();
-    //state->pos = state->pos.cross (n);
-    //state->pos *= std::sin(argPos);
-    //state->pos += tmpv;
+    /** calc direction of position vector:
+     *  r/|r| = sin(ArgPos) * ((h / |h|) x n) + cos(argPos) * n */
+    StateVectors state;
+    state.pos = std::sin(argPos) * h.normalized().cross(*n) + std::cos(argPos) * *n;
 
-    /* calc length of position vector */
-    if (e < 1.0)                  /* elliptical orbit */
-      state->pos = elements->a * (1.0 - e * e) / (1.0 + e * std::cos(trueAnomaly)) * state->pos;
-    else                          /* hyperbolic orbit */
-      state->pos = std::fabs (elements->a) * (e * e - 1.0) / (1.0 + e * std::cos(trueAnomaly)) * state->pos;
+    /** calc length of position vector */
+    if (mElements->Ecc < 1.0)                  /** elliptical orbit */
+      state.pos = mElements->a * (1.0 - mElements->Ecc * mElements->Ecc) / (1.0 + mElements->Ecc * std::cos(trueAnomaly)) * state.pos;
+    else                          /** hyperbolic orbit */
+      state.pos = std::fabs (mElements->a) * (mElements->Ecc * mElements->Ecc - 1.0) / (1.0 + mElements->Ecc * std::cos(trueAnomaly)) * state.pos;
 
-    /* calc velocity vector */
-    /* calculate squared magnitude of velocity vector */
+    /** calc velocity vector */
+    /** calculate squared magnitude of velocity vector */
     btScalar v2;
-    if (e < 1.0)   /* elliptical orbit */
+    if (mElements->Ecc < 1.0)   /** elliptical orbit */
       {
-        v2 = mu * (2.0 / state->pos.length() - 1.0 / elements->a);
+        v2 = mu * (2.0 / state.pos.length() - 1.0 / mElements->a);
       }
-    else   /* hyperbolic orbit */
+    else   /** hyperbolic orbit */
       {
-        v2 = mu * (2.0 / state->pos.length() + 1.0 / std::fabs (elements->a));
+        v2 = mu * (2.0 / state.pos.length() + 1.0 / std::fabs (mElements->a));
       }
 
-    /* calc components of velocity vector perpendicular and parallel to radius vector:
-
-    perpendicular:
-    vPro = (|h|/|pos|) * normal(h x pos)
-
-    parallel:
-    vO = √(v² - |vPro|²) * sign(sin(trueAnomaly)) * normal(pos)
-    */
-    btVector3 vPro (h.length() / state->pos.length() * h.cross (state->pos).normalized());
-    //btVector3 vPro (h.cross (state->pos));
-    //vPro.normalize();
-    //vPro *= h.length() / state->pos.length();
+    /** calc components of velocity vector perpendicular and parallel to radius vector:
+    - perpendicular:
+      vPro = (|h|/|pos|) * normal(h x pos)
+    - parallel:
+      vO = √(v² - |vPro|²) * sign(sin(trueAnomaly)) * normal(pos) */
+    btVector3 vPro (h.length() / state.pos.length() * h.cross (state.pos).normalized());
 
     btScalar tmpr (std::sin(trueAnomaly));
-    btVector3 vO;
-    if (tmpr == 0.0)   /* check for apsis condition to avoid divide by zero */
-      {
-        vO = btVector3 (0.0, 0.0, 0.0);
-      }
-    else
+    btVector3 vO (btVector3(0.0, 0.0, 0.0));
+    if (tmpr != 0.0) /** check for apsis condition to avoid divide by zero */
       {
         btScalar signSinTrueAnomaly (tmpr / std::fabs (tmpr));
 
         btScalar v0_sq (v2 - vPro.length2());
-        /* check for small negative numbers resulting from rounding */
+        /** check for small negative numbers resulting from rounding */
         if (v0_sq < 0.0) v0_sq = 0.0;
 
-        vO = state->pos.normalized();
+        vO = state.pos.normalized();
         vO *= (std::sqrt (v0_sq) * signSinTrueAnomaly);
       }
 
-    /* add to get velocity vector */
-    state->vel = vPro + vO;
+    /** add to get velocity vector */
+    state.vel = vPro + vO;
+
+    return state;
   }
 
-  int Orbit::elements2StateVector (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements,    /* pointer to orbital elements at epoch */
-    sStateVector* state,          /* pointer to location where state vector will be stored */
-    btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
-    int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
+  StateVectors Orbit::elements2StateVector (btScalar MeL, btScalar maxRelativeError, int maxIterations)
   {
-    /*
-    Code based on kostElements2StateVector1, made by TBlaxland
-    */
-
-    /* Returns number of iterations if successful, returns 0 otherwise. */
-
-    /* Pseudocode
-     *
-     * get true anomaly
-     * get longitude of ascending node and argument of periapsis
-     * calc state vectors */
-
-    /* get true anomaly */
-    btScalar trueAnomaly;
-    int ret (getTrueAnomaly (mu, elements, &trueAnomaly, maxRelativeError, maxIterations));
-
-    /* calc state vectors */
-    elements2StateVector2 (mu, elements, state, trueAnomaly);
-
-    return ret;
+    btScalar trueAnomaly (calcTrA (MeL, maxRelativeError, maxIterations));
+    return elements2StateVector (trueAnomaly);
   }
 
-  int Orbit::stateVector2Elements (
-    btScalar mu,
-    const sStateVector* state,
-    sElements* elements,
-    sOrbitParam* params)
+  void Orbit::refreshFromStateVectors (StateVectors* state)
   {
-    if (params == NULL)
-    {
-      static sOrbitParam dummy;
-      params = &dummy;
-    }
+    btVector3 h (calcH(state));
 
-    btVector3 vel (state->vel);
-
-    btVector3 h (geth(*state));
-
-    /* If velocity and position vectors are paralel and aligned, quit*/
+    /** If velocity and position vectors are parallel and aligned, throw an ecception */
     if (h.isZero())
-      return 1;
+      throw "Angular momentum is null !";
 
-    btVector3 n (getn(h));
+    calcN(&h);
 
-    btScalar E (vel.length2() / 2 - mu / state->pos.length());
+    btScalar E (state->vel.length2() / 2 - mu / state->pos.length());
     if (E == 0.0)
       E = SIMD_EPSILON;
 
-    /*
-    Alternative formula for e:
-    e = (v x h) / μ - r / |r|
-    */
-    btVector3 e (calc_e(mu, state->pos, state->vel));
+    /** Set the e vector from state vectors */
+    calcE(state);
 
-    btScalar abse (e.length());
-    /* parabolic orbit are not supported */
-    if (abse > 1.0 - SIMD_EPSILON && abse < 1.0 + SIMD_EPSILON)
+    mElements->Ecc = e->length();
+
+    Equatorial = n->length() < SIMD_EPSILON;
+    Circular = mElements->Ecc < SIMD_EPSILON;
+    Hyperbola = mElements->Ecc >= 1.0;
+
+    /** parabolic orbit are not supported */
+    if (mElements->Ecc > 1.0 - SIMD_EPSILON && mElements->Ecc < 1.0 + SIMD_EPSILON)
     {
       if (E >= 0.0)
       {
-        abse = 1.0 + SIMD_EPSILON; /* Approximate with hyperbolic */
+        mElements->Ecc = 1.0 + SIMD_EPSILON; /* Approximate with hyperbolic */
       }
       else
       {
-        abse = 1.0 - SIMD_EPSILON; /* Approximate with elliptic */
+        mElements->Ecc = 1.0 - SIMD_EPSILON; /* Approximate with elliptic */
       }
     }
-
-    bool isEquatorial (n.length() < SIMD_EPSILON);
-    bool isCircular (abse < SIMD_EPSILON);
-    bool isHyperbola (abse >= 1.0);
-
-    /*Ecc*/
-    elements->e = abse;
 
     /*
       SMa
       dp = a(1 - e)
       da = a(1 + e)
     */
-    elements->a = -mu / (2.0 * E);
-    if (isHyperbola)
+    mElements->a = -mu / (2.0 * E);
+    if (Hyperbola)
     {
-      params->PeD = h.length2() / mu;
-      params->ApD = INFINITY;
+      mParams->PeD = h.length2() / mu;
+      mParams->ApD = BT_INFINITY;
     }
     else
     {
-      params->ApD = elements->a * (1.0 + elements->e);
-      params->PeD = elements->a * (1.0 - elements->e);
+      mParams->ApD = mElements->a * (1.0 + mElements->Ecc);
+      mParams->PeD = mElements->a * (1.0 - mElements->Ecc);
     }
 
     /*Inc*/
-    if (h.length() == 0.0)
+//    if (h.length() == 0.0)
+//      {
+//        /*
+//        Avoid division by zero absh
+//        By convention, take the smallest possible i,
+//        which is the angle between r and the
+//        equatorial plane.
+//        */
+//        mElements->i = std::fmod (std::asin (mState->pos.getY() / mState->pos.length()), SIMD_PI);
+//      }
+//    else
+//      {
+        mElements->i = std::acos (h.getY() / h.length());
+//      }
+
+    /** Longitude of ascending node */
+    mElements->LAN = calcLAN();
+
+    /** Argument of Periapsis */
+    mParams->AgP = calcAgP(&h);
+
+    /** EcA */
+    mParams->EcA = calcEcA(state);
+
+    /** MnA */
+    mParams->MnA = calcMnA();
+
+    /** TrA */
+    calcTrA(mParams->EcA);
+
+    /** Lec */
+    mParams->Lec = mElements->a * mElements->Ecc;
+
+    /** SMi
+     * b² = a²(1 - e²) */
+    if (Hyperbola) mParams->SMi = std::sqrt (mElements->a * mElements->a * (mElements->Ecc * mElements->Ecc - 1.0));
+    else mParams->SMi = std::sqrt (mElements->a * mElements->a * (1.0 - mElements->Ecc * mElements->Ecc));
+
+    /** LoP */
+    mElements->LoP = std::fmod (mElements->LAN + mParams->AgP, SIMD_2_PI);
+
+    /** Mean Longitude */
+    state->MeL = mParams->MnA + mElements->LoP;
+    if (!Hyperbola) state->MeL = std::fmod (state->MeL, SIMD_2_PI);
+
+    /** TrL */
+    mParams->TrL = std::fmod (mElements->LoP + mParams->TrA, SIMD_2_PI);
+
+    /** T = 2π√(a³/μ)
+    fabs is for supporting hyperbola */
+    mParams->T = SIMD_2_PI * std::sqrt (std::fabs(std::pow(mElements->a, 3) / mu));
+
+    /** Calculating PeT and ApT: */
+    btScalar tPe (mParams->MnA * mParams->T / SIMD_2_PI); /*Time since last Pe*/
+
+    if (Hyperbola)
       {
-        /*
-        Avoid division by zero absh
-        By convention, take the smallest possible i,
-        which is the angle between r and the
-        equatorial plane.
-        */
-        elements->i = std::fmod (std::asin (state->pos.getY() / state->pos.length()), SIMD_PI);
+        mParams->PeT = -tPe;
       }
     else
       {
-        elements->i = std::acos (h.getY() / h.length());
+        mParams->PeT = mParams->T - tPe;
       }
 
-    /* Longitude of ascending node */
-    elements->LaN = getLaN(n);
-
-    /* Argument of Periapsis*/
-    params->AgP = getAgP (e, n, h, isCircular, isEquatorial);
-
-    /*TrA*/
-    bool sin_TrA_isNegative (false);
-    getTrAFromState(state->pos, vel, n, e, isCircular, isEquatorial, &sin_TrA_isNegative);
-
-    /*Lec*/
-    params->Lec = elements->a * elements->e;
-
-    /*
-    SMi
-    b² = a²(1 - e²)
-    */
-    if (isHyperbola)
-      {
-        params->SMi =
-          std::sqrt (elements->a * elements->a * (elements->e * elements->e - 1.0) );
-      }
-    else
-      {
-        params->SMi =
-          std::sqrt (elements->a * elements->a * (1.0 - elements->e * elements->e) );
-      }
-
-    /*LPe*/
-    elements->LoP = std::fmod (elements->LaN + params->AgP, SIMD_2_PI);
-
-    /*EcA*/
-    if (isHyperbola)
-      {
-        btScalar tmp = (1.0 - state->pos.length() / elements->a) / elements->e;
-
-        /*Avoid acosh out of range:*/
-        if (tmp <= 1.0)
-          {
-            params->EcA = 0.0;
-          }
-        else
-          {
-            params->EcA = std::acosh (tmp);
-          }
-      }
-    else if (isCircular)
-      {
-        params->EcA = 0.0;
-      }
-    else
-      {
-        btScalar tmp = (1.0 - state->pos.length() / elements->a) / elements->e;
-
-        /* Avoid acos out of range. 1 and -1 are included cause we now the result. */
-        if (tmp <= -1.0)
-          {
-            params->EcA = SIMD_PI;
-          }
-        else if (tmp >= 1.0)
-          {
-            params->EcA = 0.0;
-          }
-        else
-          {
-            params->EcA = std::acos (tmp);
-          }
-      }
-
-    if (isHyperbola)
-      {
-        /*Copy sign from sin(TrA)*/
-        if (sin_TrA_isNegative != (params->EcA < 0.0) )
-          params->EcA = -params->EcA;
-      }
-    else
-      {
-        /*Same rule basically, but with EcA in 0..2π range*/
-        if (sin_TrA_isNegative)
-          params->EcA = SIMD_2_PI - params->EcA;
-      }
-
-    /*MnA*/
-    if (isHyperbola)
-      {
-        params->MnA = elements->e * std::sinh (params->EcA) - params->EcA;
-      }
-    else
-      {
-        params->MnA = params->EcA - elements->e * std::sin (params->EcA);
-      }
-
-    /*MnL*/
-    elements->L = params->MnA + elements->LoP;
-    if (!isHyperbola)
-      elements->L = std::fmod (elements->L, SIMD_2_PI);
-
-    /*TrL*/
-    params->TrL = std::fmod (elements->LoP + params->TrA, SIMD_2_PI);
-
-    /*
-    T = 2π√(a³/μ)
-
-    fabs is for supporting hyperbola
-    */
-    params->T = SIMD_2_PI * std::sqrt (std::fabs(std::pow(elements->a, 3) / mu));
-
-    /*
-    Calculating PeT and ApT:
-    */
-    btScalar tPe (params->MnA * params->T / SIMD_2_PI); /*Time since last Pe*/
-
-    if (isHyperbola)
-      {
-        params->PeT = -tPe;
-      }
-    else
-      {
-        params->PeT = params->T - tPe;
-      }
-
-    params->ApT = 0.5 * params->T - tPe;
-    if (params->ApT < 0.0) params->ApT += params->T;
-    return 0;
+    mParams->ApT = 0.5 * mParams->T - tPe;
+    if (mParams->ApT < 0.0) mParams->ApT += mParams->T;
   }
 
-    void Orbit::elements2Shape (const sElements* elements, sOrbitShape* shape)
+  void Orbit::elements2Shape ()
   {
-    unsigned int i = 0;
+    /** Some utility values: */
+    btScalar multiplier (mElements->a * (1.0 - mElements->Ecc * mElements->Ecc));
 
-    /*Some utility values: */
-    btScalar multiplier = elements->a * (1.0 - elements->e * elements->e);
-    btScalar AgP = elements->LoP - elements->LaN;
+      /** First: Orbit in its own coordinate system: */
+    /** periapsis and apoapsis */
+    mShape->pe = btVector3 ( mElements->a * (1.0 - mElements->Ecc), 0.0, 0.0);
+    mShape->ap = btVector3 (-mElements->a * (1.0 + mElements->Ecc), 0.0, 0.0);
 
-    /*
-    First: Orbit in its own coordinate system:
-    */
-
-    /*Pe, Ap*/
-    shape->pe = btVector3 ( elements->a * (1.0 - elements->e), 0.0, 0.0);
-    shape->ap = btVector3 (-elements->a * (1.0 + elements->e), 0.0, 0.0);
-
-    /*Points*/
-    if (shape->numPoints == 1)
+    /** Points */
+    if (mShape->numPoints == 1)
     {
-      shape->points[0] = shape->pe;
+      mShape->points[0] = mShape->pe;
     }
-    else if (shape->numPoints > 1)
+    else if (mShape->numPoints > 1)
     {
-      btScalar maxTrA, dTrA, TrA;
+      btScalar maxTrA, dTrA, currentTrA;
 
-      /*Range of angles*/
+      /** Range of angles */
       maxTrA = SIMD_PI;
-      if (elements->e >= 1.0)
+      if (mElements->Ecc >= 1.0)
         {
-          maxTrA = std::acos (-1.0 / elements->e);
+          maxTrA = std::acos (-1.0 / mElements->Ecc);
 
           /*Make it a bit smaller to avoid division by zero:*/
-          maxTrA *= ( ( (btScalar) shape->numPoints) / (shape->numPoints + 1) );
+          maxTrA *= (((btScalar) mShape->numPoints) / (mShape->numPoints + 1));
         }
 
-      /*Angle change per segment*/
-      dTrA = (2 * maxTrA) / (shape->numPoints - 1);
+      /** Angle change per segment */
+      dTrA = (2 * maxTrA) / (mShape->numPoints - 1);
 
-      TrA = -maxTrA;
-      for (i = 0; i < shape->numPoints; i++)
+      currentTrA = -maxTrA;
+      for (unsigned int i (0); i < mShape->numPoints; ++i)
       {
-        btScalar absr = std::fabs (multiplier / (1.0 + elements->e * std::cos (TrA) ) );
-
-        btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
-        shape->points[i] = absr * direction;
-
-        TrA += dTrA;
+        btScalar absr (std::fabs (multiplier / (1.0 + mElements->Ecc * std::cos (currentTrA))));
+        btVector3 direction (btVector3 (std::cos (currentTrA), 0.0, -std::sin (currentTrA)));
+        mShape->points[i] = absr * direction;
+        currentTrA += dTrA;
       }
     }
 
 
-    /*AN*/
+    /** AN */
     {
-      btScalar TrA = -AgP;
-      btScalar absr = multiplier / (1.0 + elements->e * std::cos (TrA) );
+      btScalar currentTrA (-mParams->AgP);
+      btScalar absr (multiplier / (1.0 + mElements->Ecc * std::cos (currentTrA)));
 
       if (absr <= 0.0)
       {
-        shape->an = btVector3 (0.0, 0.0, 0.0);
+        mShape->an = btVector3 (0.0, 0.0, 0.0);
       }
       else
       {
-        btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
-        shape->an = absr * direction;
+        btVector3 direction (btVector3 (std::cos (currentTrA), 0.0, -std::sin (currentTrA)));
+        mShape->an = absr * direction;
       }
     }
 
-    /*DN*/
+    /** DN */
     {
-      btScalar TrA = SIMD_PI - AgP;
-      btScalar absr = multiplier / (1.0 + elements->e * std::cos (TrA) );
+      btScalar currentTrA (SIMD_PI - mParams->AgP);
+      btScalar absr (multiplier / (1.0 + mElements->Ecc * std::cos (currentTrA)));
 
       if (absr <= 0.0)
       {
-        shape->dn = btVector3 (0.0, 0.0, 0.0);
+        mShape->dn = btVector3 (0.0, 0.0, 0.0);
       }
       else
       {
-        btVector3 direction = btVector3 (std::cos (TrA), std::sin (TrA), 0.0);
-        shape->dn = absr * direction;
+        btVector3 direction (btVector3 (std::cos (currentTrA), std::sin (currentTrA), 0.0));
+        mShape->dn = absr * direction;
       }
     }
 
-    /*
-    Then: rotate the coordinates:
-    */
+      /** Then: rotate the coordinates: */
     {
       btMatrix3x3 AgPMat, LANMat, IncMat, transform;
 
-      AgPMat.setEulerZYX (0.0, AgP, 0.0);
-      IncMat.setEulerZYX (elements->i, 0.0, 0.0);
-      LANMat.setEulerZYX (0.0, elements->LaN, 0.0);
+      AgPMat.setEulerZYX (0.0, mParams->AgP, 0.0);
+      IncMat.setEulerZYX (mElements->i, 0.0, 0.0);
+      LANMat.setEulerZYX (0.0, mElements->LAN, 0.0);
 
       /* Now, global = LANMat * IncMat * AgPMat * local: */
       transform = LANMat * IncMat;
       transform *= AgPMat;
 
-      shape->pe = transform * shape->pe;
-      shape->ap = transform * shape->ap;
-      shape->an = transform * shape->an;
-      shape->dn = transform * shape->dn;
+      mShape->pe = transform * mShape->pe;
+      mShape->ap = transform * mShape->ap;
+      mShape->an = transform * mShape->an;
+      mShape->dn = transform * mShape->dn;
 
-      if (shape->numPoints != 0)
-        for (i = 0; i < shape->numPoints; i++)
-          shape->points[i] = transform * shape->points[i];
+      if (mShape->numPoints != 0)
+        for (unsigned int i (0); i < mShape->numPoints; ++i)
+          mShape->points[i] = transform * mShape->points[i];
     }
   }
-    btScalar Orbit::getMeanAnomalyAtTime (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    btScalar timeSinceEpoch)      /* time since epoch in seconds */
+
+  void Orbit::setMu(btScalar val)
   {
-    /* Pseudocode
-     *
-     * calc mean motion
-     * calc change in mean anomaly
-     * calc mean anomaly */
+    mu = val;
+  }
 
-    btScalar meanMotion, deltaMeanAnomaly, meanAnomaly;
+  Elements Orbit::getElements(void)
+  {
+    return *mElements;
+  }
 
+  Params Orbit::getParams(void)
+  {
+    return *mParams;
+  }
+
+  OrbitShape Orbit::getShape(void)
+  {
+    return *mShape;
+  }
+
+  btScalar Orbit::getMeanAnomalyAtTime (btScalar timeSinceEpoch)
+  {
     /* calc mean motion */
-    meanMotion = std::sqrt (mu / std::pow (std::fabs (elements->a), 3.0) );
+    btScalar meanMotion (std::sqrt (mu / std::pow (std::fabs (mElements->a), 3.0)));
 
     /* calc change in mean anomaly */
-    deltaMeanAnomaly = timeSinceEpoch * meanMotion;
+    btScalar deltaMeanAnomaly (timeSinceEpoch * meanMotion);
 
     /* calc mean anomaly */
     /* fmod takes care of overflow in the case where the mean anomaly exceeds one revolution */
-    meanAnomaly = std::fmod (elements->L - elements->LoP + deltaMeanAnomaly, SIMD_2_PI);
+    btScalar meanAnomaly (std::fmod (mElements->L - mElements->LoP + deltaMeanAnomaly, SIMD_2_PI));
 
     if (meanAnomaly < 0) meanAnomaly += SIMD_2_PI;
 
     return meanAnomaly;
   }
 
-  int Orbit::getTrueAnomalyAtTime (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    btScalar* trueAnomaly,        /* location where result will be stored */
+  btScalar Orbit::getTrueAnomalyAtTime (
     btScalar timeSinceEpoch,      /* time since epoch in seconds */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations)            /* max number of iterations for calculating eccentric anomaly */
   {
-    /* Returns number of iterations if successful, returns 0 otherwise. */
-
-    /* Pseudocode
-     *
-     * get mean anomaly
-     * get eccentric anomaly
-     * calc true anomaly */
-
     int ret;
     btScalar meanAnomaly, eccentricAnomaly;
 
     /* get mean anomaly */
-    meanAnomaly = getMeanAnomalyAtTime (mu, elements, timeSinceEpoch);
+    meanAnomaly = getMeanAnomalyAtTime (timeSinceEpoch);
 
     /* get eccentric anomaly */
-    ret = getEccentricAnomaly (elements, &eccentricAnomaly, meanAnomaly, meanAnomaly, maxRelativeError, maxIterations);
+    eccentricAnomaly = calcEcA (meanAnomaly, meanAnomaly, maxRelativeError, maxIterations);
 
     /* calc true anomaly */
-    *trueAnomaly = getTrueAnomaly2 (mu, elements, eccentricAnomaly);
-
-    return ret;
+    return calcTrA (eccentricAnomaly);
   }
 
   btScalar Orbit::getLANAtTime (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
     btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
     btScalar timeSinceEpoch)      /* time since epoch in seconds */
   {
-    btScalar meanMotion;
+    btScalar meanMotion, LANAtTime;
 
-    if (elements->e < 1.0) /* elliptical orbit */
+    if (mElements->Ecc < 1.0) /* elliptical orbit */
       {
-        meanMotion = std::sqrt (mu / pow (elements->a, 3.0) );
-        return ( elements->LaN + timeSinceEpoch * (-3.0 * meanMotion / 2.0) * pow (bodyRadius / elements->a, 2.0) * (cos (elements->i) / pow (1.0 - pow (elements->e, 2.0), 2.0) ) * jTwoCoeff );
+        meanMotion = std::sqrt (mu / pow (mElements->a, 3.0) );
+        return ( mElements->LAN + timeSinceEpoch * (-3.0 * meanMotion / 2.0) * pow (bodyRadius / mElements->a, 2.0) * (cos (mElements->i) / pow (1.0 - pow (mElements->Ecc, 2.0), 2.0) ) * jTwoCoeff );
       }
     else /* hyperbolic orbit - non spherical effect is negligible */
-      return elements->LaN;
+      return mElements->LAN;
   }
 
   btScalar Orbit::getArgPeAtTime (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
     btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
     btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
     btScalar timeSinceEpoch)      /* time since epoch in seconds */
   {
     btScalar meanMotion;
 
-    if (elements->e < 1.0) /* elliptical orbit */
+    if (mElements->Ecc < 1.0) /* elliptical orbit */
       {
-        meanMotion = std::sqrt (mu / std::pow (elements->a, 3.0) );
-        return ( elements->LoP - elements->LaN + timeSinceEpoch * (3.0 * meanMotion / 4.0) * std::pow (bodyRadius / elements->a, 2.0) * ( (5.0 * std::pow (std::cos (elements->i),
-                 2.0) - 1.0) / std::pow (1.0 - std::pow (elements->e, 2.0), 2.0) ) * jTwoCoeff );
+        meanMotion = std::sqrt (mu / std::pow (mElements->a, 3.0) );
+        return ( mElements->LoP - mElements->LAN + timeSinceEpoch * (3.0 * meanMotion / 4.0) * std::pow (bodyRadius / mElements->a, 2.0) * ( (5.0 * std::pow (std::cos (mElements->i),
+                 2.0) - 1.0) / std::pow (1.0 - std::pow (mElements->Ecc, 2.0), 2.0) ) * jTwoCoeff );
       }
     else /* hyperbolic orbit - non spherical effect is negligible */
-      return ( elements->LoP - elements->LaN );
+      return ( mElements->LoP - mElements->LAN );
   }
 
-  int Orbit::elements2StateVectorAtTime (
-    btScalar mu,                  /* standard gravitational parameter */
-    const sElements* elements, /* pointer to orbital elements at epoch */
-    sStateVector* state,       /* pointer to location where state vectors at epoch+timeSinceEpoch will be stored */
+  StateVectors Orbit::elements2StateVectorAtTime (
     btScalar timeSinceEpoch,      /* time since epoch in seconds */
     btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
     int maxIterations,            /* max number of iterations for calculating eccentric anomaly */
@@ -869,45 +737,39 @@ namespace mKOST
      * get longitude of ascending node and argument of periapsis
      * calc state vectors */
 
-    int ret;
-    btScalar trueAnomaly;
-    sElements updatedElements;
+    Elements updatedElements;
 
     /* get true anomaly */
-    ret = getTrueAnomalyAtTime (mu, elements, &trueAnomaly, timeSinceEpoch, maxRelativeError, maxIterations);
+    btScalar trueAnomaly (getTrueAnomalyAtTime (timeSinceEpoch, maxRelativeError, maxIterations));
 
     /* update elements for new epoch */
-    getElementsAtTime (mu, elements, &updatedElements, timeSinceEpoch, bodyRadius, jTwoCoeff);
+    Elements elementsAtTime (getElementsAtTime (timeSinceEpoch, bodyRadius, jTwoCoeff));
 
     /* calc state vectors */
-    elements2StateVector2 (mu, &updatedElements, state, trueAnomaly);
-
-    return ret;
+    return elements2StateVector (trueAnomaly);
   }
 
-  void Orbit::getElementsAtTime (
-    btScalar mu,                     /* standard gravitational parameter */
-    const sElements* elements,    /* pointer to orbital elements at epoch */
-    sElements* newElements,       /* pointer to location where elements at epoch+timeSinceEpoch will be stored */
+  Elements Orbit::getElementsAtTime (
     btScalar timeSinceEpoch,         /* time since epoch in seconds */
     btScalar bodyRadius,             /* mean radius of the non-spherical body being orbited */
     btScalar jTwoCoeff)              /* J2 coefficient of the non-spherical body being orbited */
   {
-    *newElements = *elements;
+    Elements newElements;
 
     /* Mean longitude: */
-    newElements->L = getMeanAnomalyAtTime (mu, newElements, timeSinceEpoch) + newElements->LoP;
+    newElements.L = getMeanAnomalyAtTime (timeSinceEpoch) + newElements.LoP;
 
     if (bodyRadius > SIMD_EPSILON)
-      {
-        /* longitude of ascending node */
-        newElements->LaN =
-          getLANAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
+    {
+      /* longitude of ascending node */
+      newElements.LAN =
+        getLANAtTime (bodyRadius, jTwoCoeff, timeSinceEpoch);
 
-        /* argument of periapsis */
-        newElements->LoP =
-          newElements->LaN +
-          getArgPeAtTime (mu, newElements, bodyRadius, jTwoCoeff, timeSinceEpoch);
-      }
+      /* argument of periapsis */
+      newElements.LoP =
+        newElements.LAN +
+        getArgPeAtTime (bodyRadius, jTwoCoeff, timeSinceEpoch);
+    }
+    return newElements;
   }
 }

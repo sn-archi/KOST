@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cmath>
+#include <fstream>
 #include <iostream>
 
 #include "../../src/mKOST.h"
@@ -10,44 +8,48 @@
 
 int main (int argc, char* argv[])
 {
-  mKOST::sStateVector initial, out;
-  mKOST::sElements elements, elements2;
-  mKOST::sOrbitParam params, params2;
-  double maxt;
-  int foundroot;
-  mKOST::Orbit* mOrbit = new mKOST::Orbit;
+  /** Initial state at t=0 */
+  mKOST::StateVectors initial;
+  initial.pos = btVector3 (-1.000000e+04, -1.000000e+09, -1.000000e+04);
+  initial.vel = btVector3 (-1.000000e+00, -1.000000e+00, -1.000000e+03);
+  mKOST::Orbit inOrbit;
 
-  btVector3 output[N];
-  unsigned int i = 0;
-
-  /*Initial state at t=0*/
-  initial.pos = btVector3 (1.000000e+04, -1.000000e+10, 1.000000e+10);
-  initial.vel = btVector3 (-1.000000e+00, 1.000000e+04, 1.000000e+04);
-
-  /*Convert to orbital elements*/
-  if (mOrbit->stateVector2Elements (MU, &initial, &elements, &params))
+  /** Convert to orbital elements */
+  try
+  {
+    inOrbit.setMu (MU);
+    inOrbit.refreshFromStateVectors(&initial);
+  }
+  catch (const char*)
+  {
     return 1;
+  }
 
   printf ("initial:\n"
         "  position: %e, %e, %e\n"
-        "  velocity: %e, %e, %e\n-----\n",
+        "  velocity: %e, %e, %e\n"
+        "  Mean Longitude: %e\n-----\n",
         initial.pos.getX(),
         initial.pos.getY(),
         initial.pos.getZ(),
         initial.vel.getX(),
         initial.vel.getY(),
-        initial.vel.getZ()
+        initial.vel.getZ(),
+        initial.MeL
         );
 
+  mKOST::Elements elements (inOrbit.getElements());
   printf ("Orbital elements:\n"
           "     a = %e m\n"
           "     e = %e\n"
           "     i = %e\n"
           "   LaN = %e\n"
           "   LoP = %e\n"
-          "     L = %e\n",
-          elements.a, elements.e, elements.i, elements.LaN, elements.LoP, elements.L
+          "   MeL = %e\n",
+          elements.a, elements.Ecc, elements.i, elements.LAN, elements.LoP, initial.MeL
          );
+
+  mKOST::Params params (inOrbit.getParams());
   printf ("Additional parameters:\n"
           "   PeD = %e m\n"
           "   ApD = %e m\n"
@@ -65,8 +67,15 @@ int main (int argc, char* argv[])
           params.AgP
          );
 
-  if (!mOrbit->elements2StateVector (MU, &elements, &out, SIMD_EPSILON, 1000000))
+  mKOST::StateVectors out;
+  try
+  {
+    out = inOrbit.elements2StateVector (initial.MeL, SIMD_EPSILON, 1000000);
+  }
+  catch (const char*)
+  {
     printf ("Couldn't find a root\n");
+  }
 
   printf ("reversed:\n"
           "  position: %e, %e, %e\n"
@@ -79,22 +88,24 @@ int main (int argc, char* argv[])
           out.vel.getZ()
           );
 
-  mOrbit->stateVector2Elements (MU, &out, &elements2, &params2);
+  mKOST::Orbit outOrbit (MU, &out);
+  mKOST::Elements elements2 (outOrbit.getElements());
   printf ("Orbital elements:\n"
           "     a = %e m\n"
           "     e = %e\n"
           "     i = %e\n"
           "   LaN = %e\n"
           "   LoP = %e\n"
-          "     L = %e\n",
+          "   MeL = %e\n",
           elements2.a,
-          elements2.e,
+          elements2.Ecc,
           elements2.i,
-          elements2.LaN,
+          elements2.LAN,
           elements2.LoP,
-          elements2.L
-         );
+          out.MeL
+          );
 
+  mKOST::Params params2 (outOrbit.getParams());
   printf ("Additional parameters:\n"
           "   PeD = %e m\n"
           "   ApD = %e m\n"
@@ -112,28 +123,34 @@ int main (int argc, char* argv[])
           params2.AgP
          );
 
-  maxt = 1.0 * params.T;
+  btScalar maxt (1.0 * params.T);
 
-  for (i = 0; i < N; i++)
+  btVector3 output[N];
+  for (int i (0); i < N; ++i)
+  {
+    double t ((i * maxt) / N);
+    mKOST::StateVectors stateNow;
+    try
     {
-      double t = (i * maxt) / N;
-
-      mKOST::sStateVector stateNow;
-
-      mOrbit->elements2StateVectorAtTime (MU, &elements, &stateNow, t, SIMD_EPSILON, 1000000, 0.0, 0.0);
-
-      output[i] = stateNow.pos;
+      stateNow = inOrbit.elements2StateVectorAtTime (t, SIMD_EPSILON, 1000000, 0.0, 0.0);
+    }
+    catch (const char*)
+    {
+      printf ("Couldn't find a root\n");
     }
 
+    output[i] = stateNow.pos;
+  }
+
   {
-    FILE* fp = fopen ("orbit.dat", "w");
-
-    // GNUPlot uses Y fr depth and Z for height. This'll make things looks as expected
+    //FILE* fp = fopen ("orbit.dat", "w");
+    std::ofstream fs("orbit.dat");
+    // GNUPlot uses Y for depth and Z for height. This'll make things looks as expected
     // Just don't pay attention to the axix names.
-    for (i = 0; i < N; i++)
-      fprintf (fp, "%f\t%f\t%f\n", output[i].getX(), output[i].getZ(), output[i].getY() );
-
-    fclose (fp);
+    for (int i (0); i < N; ++i)
+      //fprintf (fp, "%f\t%f\t%f\n", output[i].getX(), output[i].getZ(), -output[i].getY() );
+      fs << output[i].getX() << "\t" << output[i].getZ() << "\t" << -output[i].getY() << std::endl;
+    //fclose (fp);
   }
 
   return system ("./test.plot");

@@ -27,10 +27,7 @@ namespace mKOST
 {
   //! This object describes an orbit and allows to compute positions and velocities at a chosen time
 
-  /*!
-    ### Usage notes - mKOST::Orbit::elements2StateVectorX and related methods:
-
-    Parabolic orbits are NOT currently supported.
+  /*!Parabolic orbits are NOT currently supported.
 
     Position as a function of time can be found by either:
     - A call to mKOST::Orbit::elements2StateVector. Depending on settings for
@@ -44,10 +41,23 @@ namespace mKOST
         Repeat until mKOST::Orbit::GetEccentricAnomaly returns > 0.
       - Call mKOST::Orbit::getTrueAnomaly2.
       - Call mKOST::Orbit::elements2StateVector2.
+
+    The positions are all relative to the central body. If you are orbiting
+    earth and your reference is the sun, you'll have to do the translation
+    to get something that makes sense !
    */
-  class Orbit
+  ATTRIBUTE_ALIGNED16(class) Orbit
   {
-    public:
+    private:
+      btScalar     mu;         /**< Standard gravitationnal parameter for the central body */
+      Elements     *mElements;  /**< Orbital elements */
+      Params       *mParams;    /**< Suplemental orbital parameters */
+      OrbitShape   *mShape;     /**< Orbital shape */
+      btVector3    *n;          /**< Vector pointing to the AN */
+      btVector3    *e;          /**< Eccentricity vector */
+      bool         Circular;   /**< True for circular orbits */
+      bool         Hyperbola;  /**< True for hyperbolic orbits */
+      bool         Equatorial; /**< True for equatorial orbits */
 
       /** \brief Calculates the eccentricity vector
        *
@@ -57,39 +67,40 @@ namespace mKOST
        * \return Eccentricity vector
        *
        */
-      btVector3 calc_e (btScalar mu, btVector3 pos, btVector3 vel);
+      void calcE (StateVectors* state);
 
       /** \brief Calculate the angular momentum vector
        *
+       * Formula used: e = (v x h) / μ - r / |r|
+       *
        * \param state State vector structure
-       * \return The angular momentum as a btVector3
+       * \return The angular momentum vector
        *
        */
-      btVector3 geth (sStateVector state);
+      btVector3 calcH (StateVectors* state);
 
-      /** \brief Calculate the nodal vector n that points to the ascending node
+      /** \brief Calculate the nodal vector n that points to the ascending node from the angular momentum
        *
        * \param h Angular momentum vector
-       * \return Nodal vector n
+       * \return Nodal vector
        *
        */
-      btVector3 getn (btVector3 h);
+      void calcN (btVector3 *h);
 
-      /** \brief Calculate the nodal vector n that points to the ascending node
+      /** \brief Calculate the nodal vector n that points to the ascending node from the longitude of ascending node
        *
        * \param LaN Longitude of ascending node in radians
-       * \return Nodal vector n
+       * \return Nodal vector
        *
        */
-      btVector3 getn (btScalar LaN);
+      void calcN (void);
 
       /** \brief Calculate the longitude of ascending node
        *
-       * \param n Nodal vector pointing to the ascending node
        * \return Longitude of ascending node in radians
        *
        */
-      btScalar getLaN (btVector3 n);
+      btScalar calcLAN (void);
 
       /** \brief Calculates the argument of periapsis
        *
@@ -101,128 +112,153 @@ namespace mKOST
        * \return Argument of periapsis in radians
        *
        */
-      btScalar getAgP (btVector3 e, btVector3 n, btVector3 h, bool isCircular, bool isEquatorial);
+      btScalar calcAgP (btVector3 *h);
 
-      /** \brief Calculate true anomaly from state vectors and a shitload of other things
+      /** \brief Calculate true anomaly from state vectors
        *
-       * \param pos Position vector
-       * \param vel Velocity vector
-       * \param n Nodal vector
-       * \param e Eccentricity vector
-       * \param isCircular
-       * \param isEquatorial
-       * \param sin_TrA_isNegative
        * \return True anomaly in radians at current epoch
        *
        */
-
-      btScalar getTrAFromState (btVector3 pos, btVector3 vel, btVector3 n, btVector3 e, bool isCircular, bool isEquatorial, bool* sin_TrA_isNegative);
-
-      /** \brief
-       *
-       * \param mu µ (standard gravitational parameter) value for the central body
-       * \param elements
-       * \return
-       *
-       */
-      btScalar getMeanAnomaly (
-        btScalar mu,                   /* standard gravitational parameter */
-        const sElements* elements); /* pointer to orbital elements at epoch */
-
-      /** \brief Determine eccentric anomaly from an estimate using a Newton-Raphson root finding algorythm
-       *
-       * \param elements
-       * \param eccentricAnomaly
-       * \param meanAnomaly
-       * \param eccentricAnomalyEstimate
-       * \param maxRelativeError
-       * \param maxIterations
-       * \return number of iterations or 0 if failed to find a solution
-       *
-       */
-      int getEccentricAnomaly (
-        const sElements* elements,      /* pointer to orbital elements at epoch */
-        btScalar* eccentricAnomaly,        /* location where result will be stored */
-        btScalar meanAnomaly,              /* mean anomaly */
-        btScalar eccentricAnomalyEstimate, /* initial estimate of eccentric anomaly, start with mean anomaly if no better estimate available */
-        btScalar maxRelativeError,         /* maximum relative error in eccentric anomaly */
-        int maxIterations);                /* max number of iterations for calculating eccentric anomaly */
+      void calcTrA (StateVectors* state);
 
       /** \brief
        *
-       * \param mu µ (standard gravitational parameter) value for the central body
-       * \param elements
-       * \param trueAnomaly
-       * \param maxRelativeError
-       * \param maxIterations
-       * \return number of iterations or 0 if failed to find a solution
+       * *Pseudocode*
+       *
+       * - get mean anomaly
+       * - get eccentric anomaly
+       * - calc true anomaly
+       *
+       * \param MeL Mean Longitude at epoch
+       * \param maxRelativeError Your tolerance for error in the approximation. Influences the number
+       *        of runs you'll have to make to get an appropriate result
+       * \param maxIterations the maximum number of iterations before stoping to throw the result not found exception
+       * \return True anomaly aproximation
        *
        */
-      int getTrueAnomaly (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sElements* elements, /* pointer to orbital elements at epoch */
-        btScalar* trueAnomaly,        /* location where result will be stored */
-        btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
-        int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
+      btScalar calcTrA (btScalar MeL, btScalar maxRelativeError, int maxIterations);
 
-      /** \brief
+      /** \brief Calculate true anomaly from eccentric anomaly
        *
-       * \param mu µ (standard gravitational parameter) value for the central body
-       * \param elements
        * \param eccentricAnomaly
        * \return True anomaly in radians
        *
        */
-      btScalar getTrueAnomaly2 (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sElements* elements, /* pointer to orbital elements at epoch */
-        btScalar eccentricAnomaly);   /* eccentric anomaly */
+      btScalar calcTrA (btScalar eccentricAnomaly);
 
-      /** \brief Deduce state vectors from orbital elements. true anomaly will be used to determine position on the orbit
+      /** \brief Calculate eccentric anomaly
        *
-       * \param mu µ (standard gravitational parameter) value for the central body
+       * \return Eccentric anomaly in radians at current epoch
+       *
+       */
+      btScalar calcEcA (StateVectors* state);
+
+      /** \brief Calculate mean anomaly
+       *
+       * \param MeL Mean longitude at epoch
+       * \return Mean anomaly in radians at current epoch
+       *
+       */
+      btScalar calcMnA (btScalar MeL);
+
+      /** \brief
+       *
+       * \return Mean anomaly in radians at current epoch
+       *
+       */
+      btScalar calcMnA (void);
+
+      /** \brief Determine eccentric anomaly from an estimate using a Newton-Raphson root finding algorythm
+       * Code will terminate when either maxIterations or maxRelativeError is reached.
+       * Returns number of iterations if relativeError < maxRelativeError, returns 0 otherwise.
+       * *Pseudocode*
+       *
+       * do
+       *  calculate next estimate of the root of Kepler's equation using Newton's method
+       *  calculate estimate of mean anomaly from estimate of eccentric anomaly
+       *  calculate relativeError
+       * while ((iterations<=maxIterations)&&(relativeError<maxRelativeError))
+       * if iterations<=maxIterations return iterations, else return 0
+       * \param meanAnomaly
+       * \param eccentricAnomalyEstimate
+       * \param maxRelativeError
+       * \param maxIterations
+       * \return Mean anomaly estimate
+       *
+       */
+      btScalar calcEcA (btScalar meanAnomaly,
+        btScalar ecaEstimate,
+        btScalar maxRelativeError,
+        int maxIterations);
+
+    public:
+      BT_DECLARE_ALIGNED_ALLOCATOR();
+
+      /** \brief Orbit no initialization constructor */
+      Orbit(void);
+
+      /** \brief Orbit constructor from state vectors
+       *
+       * \param mu
+       * \param statevectors
+       *
+       */
+      Orbit(btScalar mu, StateVectors* state);
+
+      /** \brief Orbit constructor from orbital elements
+       *
+       * \param mu
        * \param elements
-       * \param state
+       */
+      Orbit(btScalar mu, Elements* elements);
+
+      /** \brief Orbit destructor
+       *
+       *
+       */
+      ~Orbit();
+
+      /** \brief Deduce state vectors from orbital elements. True anomaly will be used to determine position on the orbit
+       *
+       * Pseudocode
+       * - calc nodal vector, n
+       * - calc angular momentum vector, h
+       * - calc position vector
+       * - calc argument of position
+       * - calc direction of position vector
+       * - calc length of position vector
+       * - calc velocity vector
+       * - calculate magnitude of velocity vector
+       * - calc components of velocity vector perpendicular and parallel to radius vector
+       * - add to get velocity vector
        * \param trueAnomaly
        *
        */
-      void elements2StateVector2 (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sElements* elements, /* pointer to orbital elements at epoch */
-        sStateVector* state,       /* pointer to location where state vector at epoch will be stored */
-        btScalar trueAnomaly);        /* true anomaly */
+      StateVectors elements2StateVector (btScalar trueAnomaly);
 
       /** \brief Deduce state vectors from orbital elements. L will be used to determine true anomaly
        *
-       * \param mu µ (standard gravitational parameter) value for the central body
-       * \param elements
-       * \param state
-       * \param maxRelativeError
-       * \param maxIterations
+       * *Pseudocode*
+       *
+       * - get true anomaly
+       * - get longitude of ascending node and argument of periapsis
+       * - calc state vectors
+       * - get true anomaly
+       *
+       * \param MeL Mean longitude
+       * \param maxRelativeError maximum relative error in eccentric anomaly
+       * \param maxIterations max number of iterations for calculating eccentric anomaly
        * \return number of iterations or 0 if failed to find a solution
        *
        */
-      int elements2StateVector (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sElements* elements, /* pointer to orbital elements at epoch */
-        sStateVector* state,       /* pointer to location where state vector will be stored */
-        btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
-        int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
+      StateVectors elements2StateVector (btScalar MeL, btScalar maxRelativeError, int maxIterations);
 
-      /** \brief Deduce orbital elements from state vectors at epoch
+      /** \brief Refresh the object's orbital elements from state vectors
        *
-       * \param mu µ (standard gravitational parameter) value for the central body
-       * \param state
-       * \param elements
-       * \param params
-       * \return number of iterations or 0 if failed to find a solution
+       * \param state The state vectors to refresh from
        *
        */
-      int stateVector2Elements (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sStateVector* state, /* pointer to state vector at epoch */
-        sElements* elements,       /* pointer to location where orbital elements at epoch will be stored */
-        sOrbitParam* params);      /* pointer to location where extra orbital parameters will be stored */
+      void refreshFromStateVectors (StateVectors* state);
 
       /** \brief
        *
@@ -230,36 +266,66 @@ namespace mKOST
        * \param shape
        *
        */
-      void elements2Shape (const sElements* elements, sOrbitShape* shape);
+      void elements2Shape (void);
 
       /** \brief
        *
-       * \param mu µ (standard gravitational parameter) value for the central body
-       * \param elements
-       * \param timeSinceEpoch
-       * \return
+       * \param mu Gravitationnal parameter
        *
        */
-      btScalar getMeanAnomalyAtTime (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sElements* elements, /* pointer to orbital elements at epoch */
-        btScalar timeSinceEpoch);     /* time since epoch in seconds */
+      void setMu(btScalar val);
 
       /** \brief
        *
-       * \param mu µ (standard gravitational parameter) value for the central body
-       * \param elements
-       * \param trueAnomaly
+       * \return Current elements of the Orbit object
+       *
+       */
+      Elements getElements(void);
+
+      /** \brief
+       *
+       * \return Current state vectors of the Orbit object
+       *
+       */
+      StateVectors getStateVectors(void);
+
+      /** \brief
+       *
+       * \return Current parameters of the Orbit object
+       *
+       */
+      Params getParams(void);
+
+      /** \brief
+       *
+       * \return Current shape of the Orbit object
+       *
+       */
+      OrbitShape getShape(void);
+
+      /** \brief
+       * Pseudocode
+       * - calc mean motion
+       * - calc change in mean anomaly
+       * - calc mean anomaly
+       * \param timeSinceEpoch Time since epoch in seconds
+       * \return A mean anomaly in radians
+       *
+       */
+      btScalar getMeanAnomalyAtTime (btScalar timeSinceEpoch);     /* time since epoch in seconds */
+
+      /** \brief
+       * Pseudocode
+       * - get mean anomaly
+       * - get eccentric anomaly
+       * - calc true anomaly
        * \param timeSinceEpoch
        * \param maxRelativeError
        * \param maxIterations
        * \return number of iterations or 0 if failed to find a solution
        *
        */
-      int getTrueAnomalyAtTime (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sElements* elements, /* pointer to orbital elements at epoch */
-        btScalar* trueAnomaly,        /* location where result will be stored */
+      btScalar getTrueAnomalyAtTime (
         btScalar timeSinceEpoch,      /* time since epoch in seconds */
         btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
         int maxIterations);           /* max number of iterations for calculating eccentric anomaly */
@@ -275,8 +341,6 @@ namespace mKOST
        *
        */
       btScalar getLANAtTime (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sElements* elements, /* pointer to orbital elements at epoch */
         btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
         btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
         btScalar timeSinceEpoch);     /* time since epoch in seconds */
@@ -292,8 +356,6 @@ namespace mKOST
        *
        */
       btScalar getArgPeAtTime (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sElements* elements, /* pointer to orbital elements at epoch */
         btScalar bodyRadius,          /* mean radius of the non-spherical body being orbited */
         btScalar jTwoCoeff,           /* J2 coefficient of the non-spherical body being orbited */
         btScalar timeSinceEpoch);     /* time since epoch in seconds */
@@ -311,10 +373,7 @@ namespace mKOST
        * \return number of iterations or 0 if failed to find a solution
        *
        */
-      int elements2StateVectorAtTime (
-        btScalar mu,                  /* standard gravitational parameter */
-        const sElements* elements, /* pointer to orbital elements at epoch */
-        sStateVector* state,       /* pointer to where state vectors at epoch+timeSinceEpoch will be stored */
+      StateVectors elements2StateVectorAtTime (
         btScalar timeSinceEpoch,      /* time since epoch in seconds */
         btScalar maxRelativeError,    /* maximum relative error in eccentric anomaly */
         int maxIterations,            /* max number of iterations for calculating eccentric anomaly */
@@ -331,41 +390,10 @@ namespace mKOST
        * \param jTwoCoeff
        *
        */
-      void getElementsAtTime (
-        btScalar mu,                     /* standard gravitational parameter */
-        const sElements* elements,    /* pointer to orbital elements at epoch */
-        sElements* newElements,       /* pointer to where elements at epoch+timeSinceEpoch will be stored */
+      Elements getElementsAtTime (
         btScalar timeSinceEpoch,         /* time since epoch in seconds */
         btScalar bodyRadius,             /* mean radius of the non-spherical body being orbited */
         btScalar jTwoCoeff);             /* J2 coefficient of the non-spherical body being orbited */
-
-    private:
-      btScalar a;      /* Semi-major axis */
-      btScalar e;      /* Eccentricity */
-      btScalar i;      /* Inclination */
-      btScalar LaN;    /* Longitude of ascending node */
-      btScalar LoP;    /* Longitude of periapsis */
-      btScalar L;      /* Mean longitude at epoch */
-      btScalar SMi;    /* semi-minor axis */
-      btScalar PeD;    /* periapsis distance */
-      btScalar ApD;    /* apoapsis distance */
-      btScalar MnA;    /* mean anomaly */
-      btScalar TrA;    /* true anomaly */
-      btScalar MnL;    /* mean longitude */
-      btScalar TrL;    /* true longitude */
-      btScalar EcA;    /* eccentric anomaly */
-      btScalar Lec;    /* linear eccentricity */
-      btScalar T;      /* orbital period */
-      btScalar PeT;    /* time to next periapsis passage */
-      btScalar ApT;    /* time to next apoapsis passage */
-      btScalar AgP;    /* argument of periapsis */
-      btVector3 pos;   /* Position at epoch */
-      btVector3 vel;   /* Velocity at epoch */
-      btVector3 pe, ap, dn, an; /* node positions */
-      btVector3* points;
-      unsigned int numPoints;
-      bool isCircular;
-      bool isEquatorial;
   };
 }
 #endif // ELEMENTS_H
