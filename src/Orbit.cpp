@@ -24,31 +24,31 @@ namespace mKOST
 {
   Orbit::Orbit (void)
     : mElements  {Elements()},
-      mParams    {new Params},
-      mShape     {new OrbitShape},
-      n          {new btVector3},
-      e          {new btVector3}
+      mParams    {Params()},
+      mShape     {OrbitShape()},
+      n          {btVector3()},
+      e          {btVector3()}
   {
   }
 
   Orbit::Orbit (btScalar mu, StateVectors* state)
-    : mu         {mu},
-      mElements  {Elements()},
-      mParams    {new Params},
-      mShape     {new OrbitShape},
-      n          {new btVector3},
-      e          {new btVector3}
+    : mElements  {Elements()},
+      mParams    {Params()},
+      mShape     {OrbitShape()},
+      n          {btVector3()},
+      e          {btVector3()},
+      mu         {mu}
   {
     refreshFromStateVectors(state);
   }
 
   Orbit::Orbit (btScalar mu, Elements elements)
-    : mu         {mu},
-      mElements  {elements},
-      mParams    {new Params},
-      mShape     {new OrbitShape},
-      n          {new btVector3},
-      e          {new btVector3}
+    : mElements  {elements},
+      mParams    {Params()},
+      mShape     {OrbitShape()},
+      n          {btVector3()},
+      e          {btVector3()},
+      mu         {mu}
   {
     /** parabolic orbit - approximate to hyperbolic orbit */
     if (mElements.Ecc == 1.0)
@@ -61,16 +61,12 @@ namespace mKOST
 
   Orbit::~Orbit ()
   {
-    delete mParams;
-    delete mShape;
-    delete e;
-    delete n;
   }
 
   void Orbit::calcE (StateVectors* state)
   {
     btVector3 h (calcH(state));
-    *e = state->vel.cross(h) / mu - state->pos / state->pos.length();
+    e = state->vel.cross(h) / mu - state->pos / state->pos.length();
   }
 
   btVector3 Orbit::calcH (StateVectors* state) const
@@ -81,24 +77,24 @@ namespace mKOST
 
   void Orbit::calcN(btVector3 *h)
   {
-    *n = north.cross (*h);
+    n = north.cross (*h);
   }
 
   void Orbit::calcN ()
   {
-    *n = btVector3(std::cos (mElements.LAN), 0.0, -std::sin (mElements.LAN));
+    n = btVector3(std::cos (mElements.LAN), 0.0, -std::sin (mElements.LAN));
   }
 
   btScalar Orbit::calcLAN() const
   {
-    if (n->length() < SIMD_EPSILON)
+    if (n.length() < SIMD_EPSILON)
     {
       return 0.0;
     }
     else
     {
-      btScalar LAN (std::acos (n->getX() / n->length()));
-      return (n->getZ() > 0.0)?SIMD_2_PI - LAN:LAN;
+      btScalar LAN (std::acos (n.getX() / n.length()));
+      return (n.getZ() > 0.0)?SIMD_2_PI - LAN:LAN;
     }
   }
 
@@ -119,12 +115,12 @@ namespace mKOST
   {
     if (Hyperbola)
     {
-      btScalar meanAnomaly (mElements.Ecc * std::sinh(mParams->EcA) - mParams->EcA);
+      btScalar meanAnomaly (mElements.Ecc * std::sinh(mParams.EcA) - mParams.EcA);
       return meanAnomaly;
     }
     else
     {
-      btScalar meanAnomaly (mParams->EcA - mElements.Ecc * std::sin(mParams->EcA));
+      btScalar meanAnomaly (mParams.EcA - mElements.Ecc * std::sin(mParams.EcA));
       return meanAnomaly;
     }
   }
@@ -189,13 +185,13 @@ namespace mKOST
       }
       else
       {
-        trueAnomaly = std::acos (n->dot (state->pos)) / (n->length() * state->pos.length());
-        if (n->dot (state->vel) > 0.0) trueAnomaly = SIMD_2_PI - trueAnomaly;
+        trueAnomaly = std::acos (n.dot (state->pos)) / (n.length() * state->pos.length());
+        if (n.dot (state->vel) > 0.0) trueAnomaly = SIMD_2_PI - trueAnomaly;
       }
     }
     else
     {
-      btScalar tmp = e->dot (state->pos) / (mElements.Ecc * state->pos.length());
+      btScalar tmp = e.dot (state->pos) / (mElements.Ecc * state->pos.length());
 
       /* Avoid acos out of range. 1 and -1 are included cause we know the result. */
       if (tmp <= -1.0) trueAnomaly = SIMD_PI;
@@ -258,13 +254,13 @@ namespace mKOST
     }
     else if (Equatorial)
     {
-      btScalar AgP (atan2 (-e->getZ(), e->getX()));
+      btScalar AgP (atan2 (-e.getZ(), e.getX()));
       return (h->getY() < 0.0)?-AgP:AgP;
     }
     else
     {
-      btScalar AgP (std::acos (n->dot (*e) / (n->length() * e->length())));
-      return (e->getY() < 0.0)?SIMD_2_PI - AgP:AgP;
+      btScalar AgP (std::acos (n.dot (e) / (n.length() * e.length())));
+      return (e.getY() < 0.0)?SIMD_2_PI - AgP:AgP;
     }
   }
 
@@ -294,9 +290,9 @@ namespace mKOST
     }
 
     /** Copy sign from sin(TrA) */
-    if (Hyperbola && ((std::sin(mParams->TrA) < 0.0) != (eccentricAnomaly < 0.0))) eccentricAnomaly = -eccentricAnomaly;
+    if (Hyperbola && ((std::sin(mParams.TrA) < 0.0) != (eccentricAnomaly < 0.0))) eccentricAnomaly = -eccentricAnomaly;
     /** Same rule basically, but with eccentricAnomaly in 0..2π range */
-    else if ((std::sin(mParams->TrA) < 0.0)) eccentricAnomaly = SIMD_2_PI - eccentricAnomaly;
+    else if ((std::sin(mParams.TrA) < 0.0)) eccentricAnomaly = SIMD_2_PI - eccentricAnomaly;
     return eccentricAnomaly;
   }
 
@@ -309,7 +305,7 @@ namespace mKOST
   {
     /** calc angular momentum vector, h */
     /** projection of h in ecliptic (xz) plane */
-    btVector3 h (n->cross (north));
+    btVector3 h (n.cross (north));
     h *= std::sin(mElements.i);
     /** elevation of h */
     h.setY (std::cos(mElements.i));
@@ -338,7 +334,7 @@ namespace mKOST
     /** calc direction of position vector:
      *  r/|r| = sin(ArgPos) * ((h / |h|) x n) + cos(argPos) * n */
     StateVectors state;
-    state.pos = std::sin(argPos) * h.normalized().cross(*n) + std::cos(argPos) * *n;
+    state.pos = std::sin(argPos) * h.normalized().cross(n) + std::cos(argPos) * n;
 
     /** calc length of position vector */
     if (mElements.Ecc < 1.0)                  /** elliptical orbit */
@@ -408,7 +404,7 @@ namespace mKOST
     /** Set the e vector from state vectors */
     calcE(state);
 
-    mElements.Ecc = e->length();
+    mElements.Ecc = e.length();
 
     /** parabolic orbit - approximate to hyperbolic orbit */
     if (mElements.Ecc == 1.0)
@@ -416,7 +412,7 @@ namespace mKOST
       mElements.Ecc += SIMD_EPSILON;
     }
 
-    Equatorial = n->length() < SIMD_EPSILON;
+    Equatorial = n.length() < SIMD_EPSILON;
     Circular = mElements.Ecc < SIMD_EPSILON;
     Hyperbola = mElements.Ecc >= 1.0;
 
@@ -441,13 +437,13 @@ namespace mKOST
     mElements.a = -mu / (2.0 * E);
     if (Hyperbola)
     {
-      mParams->PeD = h.length2() / mu;
-      mParams->ApD = BT_INFINITY;
+      mParams.PeD = h.length2() / mu;
+      mParams.ApD = BT_INFINITY;
     }
     else
     {
-      mParams->ApD = mElements.a * (1.0 + mElements.Ecc);
-      mParams->PeD = mElements.a * (1.0 - mElements.Ecc);
+      mParams.ApD = mElements.a * (1.0 + mElements.Ecc);
+      mParams.PeD = mElements.a * (1.0 - mElements.Ecc);
     }
 
     /** Inc */
@@ -457,53 +453,53 @@ namespace mKOST
     mElements.LAN = calcLAN();
 
     /** Argument of Periapsis */
-    mParams->AgP = calcAgP(&h);
+    mParams.AgP = calcAgP(&h);
 
     /** EcA */
-    mParams->EcA = calcEcA(state);
+    mParams.EcA = calcEcA(state);
 
     /** MnA */
-    mParams->MnA = calcMnA();
+    mParams.MnA = calcMnA();
 
     /** TrA */
-    mParams->TrA = calcTrA(mParams->EcA);
+    mParams.TrA = calcTrA(mParams.EcA);
 
     /** Lec */
-    mParams->Lec = mElements.a * mElements.Ecc;
+    mParams.Lec = mElements.a * mElements.Ecc;
 
     /** SMi
      * b² = a²(1 - e²) */
-    if (Hyperbola) mParams->SMi = std::sqrt (mElements.a * mElements.a * (mElements.Ecc * mElements.Ecc - 1.0));
-    else mParams->SMi = std::sqrt (mElements.a * mElements.a * (1.0 - mElements.Ecc * mElements.Ecc));
+    if (Hyperbola) mParams.SMi = std::sqrt (mElements.a * mElements.a * (mElements.Ecc * mElements.Ecc - 1.0));
+    else mParams.SMi = std::sqrt (mElements.a * mElements.a * (1.0 - mElements.Ecc * mElements.Ecc));
 
     /** LoP */
-    mElements.LoP = std::fmod (mElements.LAN + mParams->AgP, SIMD_2_PI);
+    mElements.LoP = std::fmod (mElements.LAN + mParams.AgP, SIMD_2_PI);
 
     /** Mean Longitude */
-    state->MeL = mParams->MnA + mElements.LoP;
+    state->MeL = mParams.MnA + mElements.LoP;
     if (!Hyperbola) state->MeL = std::fmod (state->MeL, SIMD_2_PI);
 
     /** TrL */
-    mParams->TrL = std::fmod (mElements.LoP + mParams->TrA, SIMD_2_PI);
+    mParams.TrL = std::fmod (mElements.LoP + mParams.TrA, SIMD_2_PI);
 
     /** T = 2π√(a³/μ)
     fabs is for supporting hyperbola */
-    mParams->T = SIMD_2_PI * std::sqrt (std::fabs(std::pow(mElements.a, 3) / mu));
+    mParams.T = SIMD_2_PI * std::sqrt (std::fabs(std::pow(mElements.a, 3) / mu));
 
     /** Calculating PeT and ApT: */
-    btScalar tPe (mParams->MnA * mParams->T / SIMD_2_PI); /*Time since last Pe*/
+    btScalar tPe (mParams.MnA * mParams.T / SIMD_2_PI); /*Time since last Pe*/
 
     if (Hyperbola)
       {
-        mParams->PeT = -tPe;
+        mParams.PeT = -tPe;
       }
     else
       {
-        mParams->PeT = mParams->T - tPe;
+        mParams.PeT = mParams.T - tPe;
       }
 
-    mParams->ApT = 0.5 * mParams->T - tPe;
-    if (mParams->ApT < 0.0) mParams->ApT += mParams->T;
+    mParams.ApT = 0.5 * mParams.T - tPe;
+    if (mParams.ApT < 0.0) mParams.ApT += mParams.T;
   }
 
   void Orbit::elements2Shape ()
@@ -513,15 +509,15 @@ namespace mKOST
 
       /** First: Orbit in its own coordinate system: */
     /** periapsis and apoapsis */
-    mShape->pe = btVector3 ( mElements.a * (1.0 - mElements.Ecc), 0.0, 0.0);
-    mShape->ap = btVector3 (-mElements.a * (1.0 + mElements.Ecc), 0.0, 0.0);
+    mShape.pe = btVector3 ( mElements.a * (1.0 - mElements.Ecc), 0.0, 0.0);
+    mShape.ap = btVector3 (-mElements.a * (1.0 + mElements.Ecc), 0.0, 0.0);
 
     /** Points */
-    if (mShape->numPoints == 1)
+    if (mShape.numPoints == 1)
     {
-      mShape->points[0] = mShape->pe;
+      mShape.points[0] = mShape.pe;
     }
-    else if (mShape->numPoints > 1)
+    else if (mShape.numPoints > 1)
     {
       btScalar maxTrA, dTrA, currentTrA;
 
@@ -532,18 +528,18 @@ namespace mKOST
           maxTrA = std::acos (-1.0 / mElements.Ecc);
 
           /*Make it a bit smaller to avoid division by zero:*/
-          maxTrA *= (((btScalar) mShape->numPoints) / (mShape->numPoints + 1));
+          maxTrA *= (((btScalar) mShape.numPoints) / (mShape.numPoints + 1));
         }
 
       /** Angle change per segment */
-      dTrA = (2 * maxTrA) / (mShape->numPoints - 1);
+      dTrA = (2 * maxTrA) / (mShape.numPoints - 1);
 
       currentTrA = -maxTrA;
-      for (unsigned int i (0); i < mShape->numPoints; ++i)
+      for (unsigned int i (0); i < mShape.numPoints; ++i)
       {
         btScalar absr (std::fabs (multiplier / (1.0 + mElements.Ecc * std::cos (currentTrA))));
         btVector3 direction (btVector3 (std::cos (currentTrA), 0.0, -std::sin (currentTrA)));
-        mShape->points[i] = absr * direction;
+        mShape.points[i] = absr * direction;
         currentTrA += dTrA;
       }
     }
@@ -551,33 +547,33 @@ namespace mKOST
 
     /** AN */
     {
-      btScalar currentTrA (-mParams->AgP);
+      btScalar currentTrA (-mParams.AgP);
       btScalar absr (multiplier / (1.0 + mElements.Ecc * std::cos (currentTrA)));
 
       if (absr <= 0.0)
       {
-        mShape->an = btVector3 (0.0, 0.0, 0.0);
+        mShape.an = btVector3 (0.0, 0.0, 0.0);
       }
       else
       {
         btVector3 direction (btVector3 (std::cos (currentTrA), 0.0, -std::sin (currentTrA)));
-        mShape->an = absr * direction;
+        mShape.an = absr * direction;
       }
     }
 
     /** DN */
     {
-      btScalar currentTrA (SIMD_PI - mParams->AgP);
+      btScalar currentTrA (SIMD_PI - mParams.AgP);
       btScalar absr (multiplier / (1.0 + mElements.Ecc * std::cos (currentTrA)));
 
       if (absr <= 0.0)
       {
-        mShape->dn = btVector3 (0.0, 0.0, 0.0);
+        mShape.dn = btVector3 (0.0, 0.0, 0.0);
       }
       else
       {
         btVector3 direction (btVector3 (std::cos (currentTrA), std::sin (currentTrA), 0.0));
-        mShape->dn = absr * direction;
+        mShape.dn = absr * direction;
       }
     }
 
@@ -585,7 +581,7 @@ namespace mKOST
     {
       btMatrix3x3 AgPMat, LANMat, IncMat, transform;
 
-      AgPMat.setEulerZYX (0.0, mParams->AgP, 0.0);
+      AgPMat.setEulerZYX (0.0, mParams.AgP, 0.0);
       IncMat.setEulerZYX (mElements.i, 0.0, 0.0);
       LANMat.setEulerZYX (0.0, mElements.LAN, 0.0);
 
@@ -593,14 +589,14 @@ namespace mKOST
       transform = LANMat * IncMat;
       transform *= AgPMat;
 
-      mShape->pe = transform * mShape->pe;
-      mShape->ap = transform * mShape->ap;
-      mShape->an = transform * mShape->an;
-      mShape->dn = transform * mShape->dn;
+      mShape.pe = transform * mShape.pe;
+      mShape.ap = transform * mShape.ap;
+      mShape.an = transform * mShape.an;
+      mShape.dn = transform * mShape.dn;
 
-      if (mShape->numPoints != 0)
-        for (unsigned int i (0); i < mShape->numPoints; ++i)
-          mShape->points[i] = transform * mShape->points[i];
+      if (mShape.numPoints != 0)
+        for (unsigned int i (0); i < mShape.numPoints; ++i)
+          mShape.points[i] = transform * mShape.points[i];
     }
   }
 

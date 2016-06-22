@@ -49,12 +49,12 @@ namespace mKOST
   ATTRIBUTE_ALIGNED16(class) Orbit
   {
     private:
-      btScalar   mu         = SIMD_INFINITY;            /**< Standard gravitationnal parameter for the central body */
       Elements   mElements;                             /**< Orbital elements */
-      Params     *mParams;                              /**< Suplemental orbital parameters */
-      OrbitShape *mShape;                               /**< Orbital shape */
-      btVector3  *n;                                    /**< Vector pointing to the AN */
-      btVector3  *e;                                    /**< Eccentricity vector */
+      Params     mParams;                               /**< Suplemental orbital parameters */
+      OrbitShape mShape;                                /**< Orbital shape */
+      btVector3  n;                                     /**< Vector pointing to the AN */
+      btVector3  e;                                     /**< Eccentricity vector */
+      btScalar   mu         = SIMD_INFINITY;            /**< Standard gravitationnal parameter for the central body */
       btVector3  north      = btVector3(0.0, 1.0, 0.0); /**< Unit vector pointing ecliptic north */
       bool       Circular   = false;                    /**< True for circular orbits */
       bool       Hyperbola  = false;                    /**< True for hyperbolic orbits */
@@ -384,14 +384,14 @@ namespace mKOST
        * \return Current shape of the Orbit object
        *
        */
-      OrbitShape getShape(void) const {return *mShape;}
+      OrbitShape getShape(void) const {return mShape;}
 
       /** \brief
        *
        * \return Current parameters of the Orbit object
        *
        */
-      Params getParams(void) const {return *mParams;}
+      Params getParams(void) const {return mParams;}
   };
 }
 #endif // ELEMENTS_H
