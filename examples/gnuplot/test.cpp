@@ -10,15 +10,15 @@ int main (int argc, char* argv[])
 {
   /** Initial state at t=0 */
   mKOST::StateVectors initial;
-  initial.pos = btVector3 (-1.000000e+04, -1.000000e+09, -1.000000e+04);
-  initial.vel = btVector3 (-1.000000e+00, -1.000000e+00, -1.000000e+03);
-  mKOST::Orbit inOrbit;
+  initial.pos = btVector3 (0.0, 0.0, -1.000000e+04);
+  initial.vel = btVector3 (1.000000e+04, 1.0, 0.0);
+  mKOST::Orbit orbit;
 
   /** Convert to orbital elements */
   try
   {
-    inOrbit.setMu (MU);
-    inOrbit.refreshFromStateVectors(&initial);
+    orbit.setMu (MU);
+    orbit.refreshFromStateVectors(&initial);
   }
   catch (const char*)
   {
@@ -38,7 +38,7 @@ int main (int argc, char* argv[])
         initial.MeL
         );
 
-  mKOST::Elements elements (inOrbit.getElements());
+  mKOST::Elements elements (orbit.getElements());
   printf ("Orbital elements:\n"
           "     a = %e m\n"
           "     e = %e\n"
@@ -49,7 +49,7 @@ int main (int argc, char* argv[])
           elements.a, elements.Ecc, elements.i, elements.LAN, elements.LoP, initial.MeL
          );
 
-  mKOST::Params params (inOrbit.getParams());
+  mKOST::Params params (orbit.getParams());
   printf ("Additional parameters:\n"
           "   PeD = %e m\n"
           "   ApD = %e m\n"
@@ -70,11 +70,11 @@ int main (int argc, char* argv[])
   mKOST::StateVectors out;
   try
   {
-    out = inOrbit.elements2StateVector (initial.MeL, SIMD_EPSILON, 1000000);
+    out = orbit.elements2StateVector (initial.MeL, SIMD_EPSILON, 1000);
   }
-  catch (const char*)
+  catch (const char * errMsg)
   {
-    printf ("Couldn't find a root\n");
+    std::cout << errMsg << std::endl;
   }
 
   printf ("reversed:\n"
@@ -88,8 +88,8 @@ int main (int argc, char* argv[])
           out.vel.getZ()
           );
 
-  mKOST::Orbit outOrbit (MU, &out);
-  mKOST::Elements elements2 (outOrbit.getElements());
+  orbit.refreshFromStateVectors (&out);
+  elements = orbit.getElements();
   printf ("Orbital elements:\n"
           "     a = %e m\n"
           "     e = %e\n"
@@ -97,15 +97,15 @@ int main (int argc, char* argv[])
           "   LaN = %e\n"
           "   LoP = %e\n"
           "   MeL = %e\n",
-          elements2.a,
-          elements2.Ecc,
-          elements2.i,
-          elements2.LAN,
-          elements2.LoP,
+          elements.a,
+          elements.Ecc,
+          elements.i,
+          elements.LAN,
+          elements.LoP,
           out.MeL
           );
 
-  mKOST::Params params2 (outOrbit.getParams());
+  params = orbit.getParams();
   printf ("Additional parameters:\n"
           "   PeD = %e m\n"
           "   ApD = %e m\n"
@@ -114,13 +114,13 @@ int main (int argc, char* argv[])
           "   EcA = %e\n"
           "     T = %e s\n"
           "   AgP = %e\n",
-          params2.PeD,
-          params2.ApD,
-          params2.MnA,
-          params2.TrA,
-          params2.EcA,
-          params2.T,
-          params2.AgP
+          params.PeD,
+          params.ApD,
+          params.MnA,
+          params.TrA,
+          params.EcA,
+          params.T,
+          params.AgP
          );
 
   btScalar maxt (1.0 * params.T);
@@ -132,26 +132,18 @@ int main (int argc, char* argv[])
     mKOST::StateVectors stateNow;
     try
     {
-      stateNow = inOrbit.elements2StateVectorAtTime (t, SIMD_EPSILON, 1000000, 0.0, 0.0);
+      stateNow = orbit.elements2StateVectorAtTime (initial.MeL, t, SIMD_EPSILON, 1000, 0.0, 0.0);
     }
     catch (const char*)
     {
       printf ("Couldn't find a root\n");
     }
-
     output[i] = stateNow.pos;
   }
 
-  {
-    //FILE* fp = fopen ("orbit.dat", "w");
-    std::ofstream fs("orbit.dat");
-    // GNUPlot uses Y for depth and Z for height. This'll make things looks as expected
-    // Just don't pay attention to the axix names.
-    for (int i (0); i < N; ++i)
-      //fprintf (fp, "%f\t%f\t%f\n", output[i].getX(), output[i].getZ(), -output[i].getY() );
-      fs << output[i].getX() << "\t" << output[i].getZ() << "\t" << -output[i].getY() << std::endl;
-    //fclose (fp);
-  }
+  std::ofstream fs("orbit.dat");
+  for (int i (0); i < N; ++i)
+    fs << output[i].getX() << "\t" << output[i].getZ() << "\t" << -output[i].getY() << std::endl;
 
   return system ("./test.plot");
 }

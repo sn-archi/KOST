@@ -16,10 +16,10 @@ int main (int argc, char* argv[])
   elements.LAN = 0.0;
   elements.L = SIMD_HALF_PI;
 
-  mKOST::Orbit mOrbit (MU, &elements);
+  mKOST::Orbit orbit (MU, elements);
 
   /** Convert to orbital elements */
-  mOrbit.elements2StateVector (SIMD_EPSILON, 1000000);
+  mKOST::StateVectors out = orbit.elements2StateVector (elements.L, SIMD_EPSILON, 1000000);
 
   printf ("Orbital elements:\n"
           "     a = %f m\n"
@@ -27,11 +27,11 @@ int main (int argc, char* argv[])
           "     i = %f\n"
           " theta = %f\n"
           "omegab = %f\n"
-          "     L = %f\n",
-          elements.a, elements.Ecc, elements.i, elements.LAN, elements.LoP, elements.L
+          "   MeL = %f\n",
+          elements.a, elements.Ecc, elements.i, elements.LAN, elements.LoP, out.MeL
          );
 
-  mKOST::Params params (mOrbit.getParams());
+  mKOST::Params params (orbit.getParams());
   printf ("Additional parameters:\n"
           "   PeD = %f m\n"
           "   ApD = %f m\n"
@@ -49,8 +49,8 @@ int main (int argc, char* argv[])
           params.AgP
          );
 
-  mOrbit.stateVector2Elements ();
-  mKOST::Elements elements2 (mOrbit.getElements());
+  orbit.refreshFromStateVectors (&out);
+  mKOST::Elements elements2 (orbit.getElements());
   printf ("Orbital elements reversed:\n"
           "     a = %f m\n"
           "     e = %f\n"
@@ -61,7 +61,7 @@ int main (int argc, char* argv[])
           elements2.a, elements2.Ecc, elements2.i, elements2.LAN, elements2.LoP, elements2.L
          );
 
-  params = mOrbit.getParams();
+  params = orbit.getParams();
   printf ("Additional parameters:\n"
           "   PeD = %f m\n"
           "   ApD = %f m\n"
@@ -79,7 +79,7 @@ int main (int argc, char* argv[])
           params.AgP
          );
 
-  mKOST::StateVectors out (mOrbit.getStateVectors());
+  out = orbit.elements2StateVector(out.MeL, SIMD_EPSILON, 1000);
   printf ("state:\n"
           "  position: %f, %f, %f\n"
           "  velocity: %f, %f, %f\n",

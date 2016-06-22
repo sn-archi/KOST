@@ -8,16 +8,10 @@ btScalar maxVerror (-1.0), maxRerror (-1.0);
 void testState (mKOST::StateVectors* sv)
 {
   /** Convert to orbital elements */
-  mKOST::Orbit mOrbitIn;
-  mOrbitIn.setMu (MU);
-  mOrbitIn.refreshFromStateVectors(sv);
-  mKOST::Elements elements = mOrbitIn.getElements ();
+  mKOST::Orbit orbit (MU, sv);
 
   /** Convert back to state vector */
-  mKOST::Orbit mOrbitOut(MU, &elements);
-  mKOST::StateVectors out;
-
-  out = mOrbitOut.elements2StateVector (sv->MeL, 10 * SIMD_EPSILON, 1000000);
+  mKOST::StateVectors out (orbit.elements2StateVector (sv->MeL, 10 * SIMD_EPSILON, 1000));
 
   /** Compute the difference between the two state vectors and get an error ratio based on the vector length */
   btVector3 diff (sv->pos - out.pos);
@@ -98,8 +92,9 @@ int main (int argc, char* argv[])
                           {
                             testState (&sv);
                           }
-                          catch (const char *)
+                          catch (const char * errMsg)
                           {
+                            std::cout << errMsg << std::endl;
                             ++skipped;
                           }
                           ++counter;
