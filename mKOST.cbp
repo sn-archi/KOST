@@ -12,8 +12,10 @@
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-fPIC" />
 					<Add option="-pg" />
 					<Add option="-g" />
+					<Add directory="src" />
 				</Compiler>
 				<Linker>
 					<Add option="-pg" />
@@ -25,7 +27,9 @@
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-fPIC" />
 					<Add option="-O2" />
+					<Add directory="src" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -75,7 +79,6 @@
 			<Add alias="Test" targets="Debug;Accuracy;GNUPlot;Quick test;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-fPIC" />
 			<Add option="-std=c++14" />
 			<Add option="-Wextra" />
 			<Add option="-Wall" />
@@ -93,11 +96,27 @@
 		<Unit filename="examples/quick/test.cpp">
 			<Option target="Quick test" />
 		</Unit>
+		<Unit filename="src/Elements.cpp">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/Elements.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
 		<Unit filename="src/Orbit.cpp">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
 		<Unit filename="src/Orbit.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/Params.cpp">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/Params.h">
 			<Option target="Debug" />
 			<Option target="Release" />
 		</Unit>
