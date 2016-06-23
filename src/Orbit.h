@@ -18,8 +18,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef ELEMENTS_H
-#define ELEMENTS_H
+#ifndef ORBIT_H
+#define ORBIT_H
 
 #include "types.h"
 
@@ -250,7 +250,7 @@ namespace mKOST
        */
       void calcE (StateVectors* state);
 
-      /** \brief Calculate the angular momentum vector
+      /** \brief Calculate the angular momentum vector from state vectors
        *
        * Formula used: e = (v x h) / μ - r / |r|
        *
@@ -259,6 +259,16 @@ namespace mKOST
        *
        */
       btVector3 calcH (StateVectors* state) const;
+
+      /** \brief Calculate the angular momentum vector from elements
+       *
+       * Formula used: TODO
+       *
+       * \param state State vector structure
+       * \return The angular momentum vector
+       *
+       */
+      btVector3 calcH (void) const;
 
       /** \brief Calculate the nodal vector n that points to the ascending node from the angular momentum
        *
@@ -275,6 +285,28 @@ namespace mKOST
        *
        */
       void calcN (void);
+
+      /** \brief Calculate the semi-minor axis b² = a²(1 - e²)
+       *
+       * \return The semi-minor axis
+       *
+       */
+      btScalar calcSMi (void) const;
+
+      /** \brief Calculate the periapsis distance from the central body
+       *
+       * \param h Pointer to the angular momentum
+       * \return The periapsis distance
+       *
+       */
+      btScalar calcPeD (btVector3 *h) const;
+
+      /** \brief Calculate the apoapsis distance from the central body
+       *
+       * \return The apoapsis distance
+       *
+       */
+      btScalar calcApD (void) const;
 
       /** \brief Calculate the longitude of ascending node
        *
@@ -383,4 +415,4 @@ namespace mKOST
        void refreshParams(void);
   };
 }
-#endif // ELEMENTS_H
+#endif // ORBIT_H

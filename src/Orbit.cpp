@@ -111,16 +111,9 @@ namespace mKOST
       da = a(1 + e)
     */
     mElements.a = -mu / (2.0 * E);
-    if (Hyperbola)
-    {
-      mParams.PeD = h.length2() / mu;
-      mParams.ApD = BT_INFINITY;
-    }
-    else
-    {
-      mParams.ApD = mElements.a * (1.0 + mElements.Ecc);
-      mParams.PeD = mElements.a * (1.0 - mElements.Ecc);
-    }
+
+    mParams.PeD = calcPeD(&h);
+    mParams.ApD = calcApD();
 
     /** Inc */
     mElements.i = std::acos (h.getY() / h.length());
@@ -145,13 +138,12 @@ namespace mKOST
 
     /** SMi
      * b² = a²(1 - e²) */
-    if (Hyperbola) mParams.SMi = std::sqrt (mElements.a * mElements.a * (mElements.Ecc * mElements.Ecc - 1.0));
-    else mParams.SMi = std::sqrt (mElements.a * mElements.a * (1.0 - mElements.Ecc * mElements.Ecc));
+    mParams.SMi = calcSMi();
 
     /** LoP */
     mElements.LoP = std::fmod (mElements.LAN + mParams.AgP, SIMD_2_PI);
 
-    /** Mean Longitude */
+    /** Mean Longitude at epoch*/
     state->MeL = mParams.MnA + mElements.LoP;
     if (!Hyperbola) state->MeL = std::fmod (state->MeL, SIMD_2_PI);
 
@@ -180,29 +172,7 @@ namespace mKOST
 
   StateVectors Orbit::elements2StateVector (btScalar trueAnomaly) const
   {
-    /** calc angular momentum vector, h */
-    /** projection of h in ecliptic (xz) plane */
-    btVector3 h (n.cross (north));
-    h *= std::sin(mElements.i);
-    /** elevation of h */
-    h.setY (std::cos(mElements.i));
-    h.normalize();
-    /** calc magnitude of h */
-
-    /** calc radius and velocity at periapsis */
-    btScalar rPe, vPe;
-    if (mElements.Ecc < 1.0)   /** elliptical orbit */
-      {
-        rPe = mElements.a * (1.0 - mElements.Ecc * mElements.Ecc) / (1.0 + mElements.Ecc);
-        vPe = std::sqrt (mu * (2.0 / rPe - 1.0 / mElements.a));
-      }
-    else   /** hyperbolic orbit */
-      {
-        rPe = std::fabs (mElements.a) * (mElements.Ecc * mElements.Ecc - 1.0) / (1.0 + mElements.Ecc);
-        vPe = std::sqrt (mu * (2.0 / rPe + 1.0 / std::fabs (mElements.a)));
-      }
-    /** calc h */
-    h *= rPe * vPe;
+    btVector3 h (calcH());
 
     /** calc position vector */
     /** argument of position, measured from the longitude of ascending node */
@@ -305,7 +275,6 @@ namespace mKOST
         currentTrA += dTrA;
       }
     }
-
 
     /** AN */
     {
@@ -471,14 +440,74 @@ namespace mKOST
     return h;
   }
 
+  btVector3 Orbit::calcH() const
+  {
+    /** calc angular momentum vector, h */
+    /** projection of h in ecliptic (xz) plane */
+    btVector3 h (n.cross (north));
+    h *= std::sin(mElements.i);
+    /** elevation of h */
+    h.setY (std::cos(mElements.i));
+    h.normalize();
+    /** calc magnitude of h */
+
+    /** calc radius and velocity at periapsis */
+    btScalar rPe, vPe;
+    if (mElements.Ecc < 1.0)   /** elliptical orbit */
+      {
+        rPe = mElements.a * (1.0 - mElements.Ecc * mElements.Ecc) / (1.0 + mElements.Ecc);
+        vPe = std::sqrt (mu * (2.0 / rPe - 1.0 / mElements.a));
+      }
+    else   /** hyperbolic orbit */
+      {
+        rPe = std::fabs (mElements.a) * (mElements.Ecc * mElements.Ecc - 1.0) / (1.0 + mElements.Ecc);
+        vPe = std::sqrt (mu * (2.0 / rPe + 1.0 / std::fabs (mElements.a)));
+      }
+    /** calc h */
+    h *= rPe * vPe;
+
+    return h;
+  }
+
   void Orbit::calcN(btVector3 *h)
   {
-    n = north.cross (*h);
+    //n = north.cross (*h);
+    n = btVector3(h->getZ(), 0.0, -h->getX());
   }
 
   void Orbit::calcN ()
   {
     n = btVector3(std::cos (mElements.LAN), 0.0, -std::sin (mElements.LAN));
+  }
+
+  btScalar Orbit::calcSMi() const
+  {
+    if (Hyperbola) return std::sqrt (mElements.a * mElements.a * (mElements.Ecc * mElements.Ecc - 1.0));
+    else return std::sqrt (mElements.a * mElements.a * (1.0 - mElements.Ecc * mElements.Ecc));
+  }
+
+  btScalar Orbit::calcPeD(btVector3 *h) const
+  {
+    if (Hyperbola)
+    {
+      return h->length2() / mu;
+    }
+    else
+    {
+      return mElements.a * (1.0 - mElements.Ecc);
+    }
+  }
+
+  btScalar Orbit::calcApD() const
+  {
+    if (Hyperbola)
+    {
+      return BT_INFINITY;
+    }
+    else
+    {
+      return mElements.a * (1.0 + mElements.Ecc);
+    }
   }
 
   btScalar Orbit::calcLAN() const
@@ -694,6 +723,12 @@ namespace mKOST
 
   void Orbit::refreshParams()
   {
-
+    btVector3 h (calcH());
+    mParams.SMi = calcSMi();
+    mParams.PeD = calcPeD(&h);
+    mParams.ApD = calcApD();
+    mParams.Lec = mElements.a * mElements.Ecc;
+    mParams.T = 0.0;
+    mParams.AgP = calcAgP(&h);
   }
 }
