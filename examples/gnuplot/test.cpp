@@ -10,8 +10,8 @@ int main (int argc, char* argv[])
 {
   /** Initial state at t=0 */
   mKOST::StateVectors initial;
-  initial.pos = btVector3 (0.0, 0.0, -1.000000e+04);
-  initial.vel = btVector3 (1.000000e+04, 1.0, 0.0);
+  initial.pos = btVector3 (-10000, -10000, -10000);
+  initial.vel = btVector3 (0, 1000, 0);
   mKOST::Orbit orbit;
 
   /** Convert to orbital elements */
@@ -39,33 +39,10 @@ int main (int argc, char* argv[])
         );
 
   mKOST::Elements elements (orbit.getElements());
-  printf ("Orbital elements:\n"
-          "     a = %e m\n"
-          "     e = %e\n"
-          "     i = %e\n"
-          "   LaN = %e\n"
-          "   LoP = %e\n"
-          "   MeL = %e\n",
-          elements.a, elements.Ecc, elements.i, elements.LAN, elements.LoP, initial.MeL
-         );
+  std::cout << elements << std::endl;
 
   mKOST::Params params (orbit.getParams());
-  printf ("Additional parameters:\n"
-          "   PeD = %e m\n"
-          "   ApD = %e m\n"
-          "   MnA = %e\n"
-          "   TrA = %e\n"
-          "   EcA = %e\n"
-          "     T = %e s\n"
-          "   AgP = %e\n-----\n",
-          params.PeD,
-          params.ApD,
-          params.MnA,
-          params.TrA,
-          params.EcA,
-          params.T,
-          params.AgP
-         );
+  std::cout << params << std::endl;
 
   mKOST::StateVectors out;
   try
@@ -90,38 +67,10 @@ int main (int argc, char* argv[])
 
   orbit.refreshFromStateVectors (&out);
   elements = orbit.getElements();
-  printf ("Orbital elements:\n"
-          "     a = %e m\n"
-          "     e = %e\n"
-          "     i = %e\n"
-          "   LaN = %e\n"
-          "   LoP = %e\n"
-          "   MeL = %e\n",
-          elements.a,
-          elements.Ecc,
-          elements.i,
-          elements.LAN,
-          elements.LoP,
-          out.MeL
-          );
+  std::cout << elements << std::endl;
 
   params = orbit.getParams();
-  printf ("Additional parameters:\n"
-          "   PeD = %e m\n"
-          "   ApD = %e m\n"
-          "   MnA = %e\n"
-          "   TrA = %e\n"
-          "   EcA = %e\n"
-          "     T = %e s\n"
-          "   AgP = %e\n",
-          params.PeD,
-          params.ApD,
-          params.MnA,
-          params.TrA,
-          params.EcA,
-          params.T,
-          params.AgP
-         );
+  std::cout << params << std::endl;
 
   btScalar maxt (1.0 * params.T);
 
@@ -132,7 +81,7 @@ int main (int argc, char* argv[])
     mKOST::StateVectors stateNow;
     try
     {
-      stateNow = orbit.elements2StateVectorAtTime (initial.MeL, t, SIMD_EPSILON, 1000, 0.0, 0.0);
+      stateNow = orbit.elements2StateVectorAtTime (initial.MeL, t, 2 * SIMD_EPSILON, 10000, 0.0, 0.0);
     }
     catch (const char*)
     {

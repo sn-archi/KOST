@@ -9,9 +9,9 @@ int main (int argc, char* argv[])
 {
   /** Alternative test, with an initial param list at t0 */
   mKOST::Elements elements;
-  elements.a = 5006.2798222;
-  elements.Ecc = 0.997491222;
-  elements.i = 0.0;
+  elements.a = -1.3286904448293069;
+  elements.Ecc = 1229025;
+  elements.i = SIMD_HALF_PI;
   elements.LoP = -SIMD_HALF_PI;
   elements.LAN = 0.0;
 

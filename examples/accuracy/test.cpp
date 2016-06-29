@@ -11,7 +11,7 @@ void testState (mKOST::StateVectors* sv)
   mKOST::Orbit orbit (MU, sv);
 
   /** Convert back to state vector */
-  mKOST::StateVectors out (orbit.elements2StateVector (sv->MeL, 10 * SIMD_EPSILON, 1000));
+  mKOST::StateVectors out (orbit.elements2StateVector (sv->MeL, 2 * SIMD_EPSILON, 10000));
 
   /** Compute the difference between the two state vectors and get an error ratio based on the vector length */
   btVector3 diff (sv->pos - out.pos);
@@ -94,7 +94,7 @@ int main (int argc, char* argv[])
                           }
                           catch (const char * errMsg)
                           {
-                            std::cout << errMsg << std::endl;
+                            //std::cout << errMsg << std::endl;
                             ++skipped;
                           }
                           ++counter;
