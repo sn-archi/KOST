@@ -72,6 +72,12 @@ namespace mKOST
       throw "Angular momentum is null !";
 
     calcN(&h);
+    if (n.length() < SIMD_EPSILON)
+    {
+      n = btVector3 (1.0, 0.0, 0.0);
+      Equatorial = true;
+    }
+    else Equatorial = false;
 
     btScalar E (state->vel.length2() / 2 - mu / state->pos.length());
     if (E == 0.0)
@@ -88,7 +94,6 @@ namespace mKOST
       mElements.Ecc += SIMD_EPSILON;
     }
 
-    Equatorial = n.length() < SIMD_EPSILON;
     Circular = mElements.Ecc < SIMD_EPSILON;
     Hyperbola = mElements.Ecc >= 1.0;
 
@@ -150,9 +155,8 @@ namespace mKOST
     /** TrL */
     mParams.TrL = std::fmod (mElements.LoP + mParams.TrA, SIMD_2_PI);
 
-    /** T = 2π√(a³/μ)
-    fabs is for supporting hyperbola */
-    mParams.T = SIMD_2_PI * std::sqrt (std::fabs(std::pow(mElements.a, 3) / mu));
+    /** Orbital period */
+    mParams.T = calcT();
 
     /** Calculating PeT and ApT: */
     btScalar tPe (mParams.MnA * mParams.T / SIMD_2_PI); /*Time since last Pe*/
@@ -436,26 +440,20 @@ namespace mKOST
 
   btVector3 Orbit::calcH (StateVectors* state) const
   {
-    btVector3 h (state->pos.cross (state->vel));
-    return h;
+    return (state->pos.cross (state->vel));
   }
 
   btVector3 Orbit::calcH() const
   {
-    /** calc angular momentum vector, h */
-    /** projection of h in ecliptic (xz) plane */
-    btVector3 h (n.cross (north));
-    h *= std::sin(mElements.i);
-    /** elevation of h */
+    btVector3 h (n.cross (north) * std::sin(mElements.i));
     h.setY (std::cos(mElements.i));
     h.normalize();
-    /** calc magnitude of h */
 
     /** calc radius and velocity at periapsis */
     btScalar rPe, vPe;
     if (mElements.Ecc < 1.0)   /** elliptical orbit */
       {
-        rPe = mElements.a * (1.0 - mElements.Ecc * mElements.Ecc) / (1.0 + mElements.Ecc);
+        rPe = mElements.a * (1.0 - std::pow(mElements.Ecc,2)) / (1.0 + mElements.Ecc);
         vPe = std::sqrt (mu * (2.0 / rPe - 1.0 / mElements.a));
       }
     else   /** hyperbolic orbit */
@@ -471,13 +469,19 @@ namespace mKOST
 
   void Orbit::calcN(btVector3 *h)
   {
-    //n = north.cross (*h);
     n = btVector3(h->getZ(), 0.0, -h->getX());
+    n.normalize();
   }
 
   void Orbit::calcN ()
   {
     n = btVector3(std::cos (mElements.LAN), 0.0, -std::sin (mElements.LAN));
+  }
+
+  btScalar Orbit::calcT()
+  {
+    /** fabs is for supporting hyperbola */
+    return SIMD_2_PI * std::sqrt (std::fabs(std::pow(mElements.a, 3) / mu));
   }
 
   btScalar Orbit::calcSMi() const
@@ -536,7 +540,7 @@ namespace mKOST
     }
     else
     {
-      btScalar AgP (std::acos (n.dot (e) / (n.length() * e.length())));
+      btScalar AgP (std::acos (n.dot (e) / (n.length() * mElements.Ecc)));
       return (e.getY() < 0.0)?SIMD_2_PI - AgP:AgP;
     }
   }
@@ -621,32 +625,34 @@ namespace mKOST
         return meanAnomaly;
       }
 
-    /** parabolic orbit - approximate to hyperbolic */
-//    if (mElements.Ecc == 1.0) mElements.Ecc += SIMD_EPSILON;
-
     btScalar relativeError, mnaEstimate;
-    int i (0);
-    do
-      {
-        if (!Circular && !Hyperbola)   /** elliptical orbit */
-          {
-            /** calculate next estimate of the root of Kepler's equation using Newton's method */
-            ecaEstimate = ecaEstimate - (ecaEstimate - mElements.Ecc * std::sin (ecaEstimate) - meanAnomaly) / (1.0 - mElements.Ecc * std::cos (ecaEstimate));
-            /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
-            mnaEstimate = ecaEstimate - mElements.Ecc * std::sin (ecaEstimate);
-          }
-        else   /** hyperbolic orbit */
-          {
-            /** calculate next estimate of the root of Kepler's equation using Newton's method */
-            ecaEstimate = ecaEstimate - (mElements.Ecc * std::sinh (ecaEstimate) - ecaEstimate - meanAnomaly) / (mElements.Ecc * std::cosh (ecaEstimate) - 1.0);
-            /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
-            mnaEstimate = mElements.Ecc * std::sinh (ecaEstimate) - ecaEstimate;
-          }
-        /** calculate relativeError */
-        relativeError = 1.0 - mnaEstimate / meanAnomaly;
-        ++i;
-      }
-    while ( (i < maxIterations) && (std::fabs (relativeError) > std::fabs (maxRelativeError) ) );
+
+    if (meanAnomaly == 0.0) return 0.0;
+    else
+    {
+      int i (0);
+      do
+        {
+          if (!Circular && !Hyperbola)   /** elliptical orbit */
+            {
+              /** calculate next estimate of the root of Kepler's equation using Newton's method */
+              ecaEstimate = ecaEstimate - (ecaEstimate - mElements.Ecc * std::sin (ecaEstimate) - meanAnomaly) / (1.0 - mElements.Ecc * std::cos (ecaEstimate));
+              /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
+              mnaEstimate = ecaEstimate - mElements.Ecc * std::sin (ecaEstimate);
+            }
+          else   /** hyperbolic orbit */
+            {
+              /** calculate next estimate of the root of Kepler's equation using Newton's method */
+              ecaEstimate = ecaEstimate - (mElements.Ecc * std::sinh (ecaEstimate) - ecaEstimate - meanAnomaly) / (mElements.Ecc * std::cosh (ecaEstimate) - 1.0);
+              /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
+              mnaEstimate = mElements.Ecc * std::sinh (ecaEstimate) - ecaEstimate;
+            }
+          /** calculate relativeError */
+          relativeError = 1.0 - mnaEstimate / meanAnomaly;
+          ++i;
+        }
+      while ( (i < maxIterations) && (std::fabs (relativeError) > std::fabs (maxRelativeError) ) );
+    }
 
     if (!Hyperbola)
       {
@@ -656,7 +662,7 @@ namespace mKOST
         if (ecaEstimate >= SIMD_2_PI) ecaEstimate -= SIMD_2_PI;
       }
 
-    if ( std::fabs (relativeError) < std::fabs (maxRelativeError) )
+    if ( std::fabs (relativeError) <= std::fabs (maxRelativeError) )
       return ecaEstimate;
     else
       throw "No acceptable solution found";
@@ -724,11 +730,13 @@ namespace mKOST
   void Orbit::refreshParams()
   {
     btVector3 h (calcH());
+    Equatorial = (mElements.i == 0.0 || mElements.i == SIMD_PI);
+    Circular = mElements.Ecc == 0.0;
+    Hyperbola = mElements.Ecc >= 1.0;
     mParams.SMi = calcSMi();
     mParams.PeD = calcPeD(&h);
     mParams.ApD = calcApD();
     mParams.Lec = mElements.a * mElements.Ecc;
-    mParams.T = 0.0;
-    mParams.AgP = calcAgP(&h);
+    mParams.T = calcT();
   }
 }

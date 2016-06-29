@@ -286,6 +286,13 @@ namespace mKOST
        */
       void calcN (void);
 
+      /** \brief T = 2π√(a³/μ)
+       *
+       * \return Orbital period in seconds
+       *
+       */
+      btScalar calcT(void);
+
       /** \brief Calculate the semi-minor axis b² = a²(1 - e²)
        *
        * \return The semi-minor axis
