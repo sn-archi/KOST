@@ -32,18 +32,18 @@ namespace mKOST
   std::ostream &operator << (std::ostream &o, const Params &v)
   {
     o     <<
-    v.SMi << "," <<
     v.PeD << "," <<
     v.ApD << "," <<
     v.MnA << "," <<
     v.TrA << "," <<
-    v.TrL << "," <<
     v.EcA << "," <<
-    v.Lec << "," <<
     v.T   << "," <<
+    v.AgP << "," <<
+    v.TrL << "," <<
+    v.Lec << "," <<
     v.PeT << "," <<
     v.ApT << "," <<
-    v.AgP;
+    v.SMi;
     return o;
   }
 }

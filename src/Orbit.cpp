@@ -129,14 +129,14 @@ namespace mKOST
     /** Argument of Periapsis */
     mParams.AgP = calcAgP(&h);
 
+    /** TrA */
+    mParams.TrA = calcTrA(state);
+
     /** EcA */
     mParams.EcA = calcEcA(state);
 
     /** MnA */
     mParams.MnA = calcMnA();
-
-    /** TrA */
-    mParams.TrA = calcTrA(mParams.EcA);
 
     /** Lec */
     mParams.Lec = mElements.a * mElements.Ecc;
@@ -189,9 +189,9 @@ namespace mKOST
 
     /** calc length of position vector */
     if (mElements.Ecc < 1.0)                  /** elliptical orbit */
-      state.pos = mElements.a * (1.0 - mElements.Ecc * mElements.Ecc) / (1.0 + mElements.Ecc * std::cos(trueAnomaly)) * state.pos;
+      state.pos = mElements.a * (1.0 - std::pow(mElements.Ecc,2)) / (1.0 + mElements.Ecc * std::cos(trueAnomaly)) * state.pos;
     else                          /** hyperbolic orbit */
-      state.pos = std::fabs (mElements.a) * (mElements.Ecc * mElements.Ecc - 1.0) / (1.0 + mElements.Ecc * std::cos(trueAnomaly)) * state.pos;
+      state.pos = std::fabs (mElements.a) * (std::pow(mElements.Ecc,2) - 1.0) / (1.0 + mElements.Ecc * std::cos(trueAnomaly)) * state.pos;
 
     /** calc velocity vector */
     /** calculate squared magnitude of velocity vector */
@@ -504,14 +504,7 @@ namespace mKOST
 
   btScalar Orbit::calcApD() const
   {
-    if (Hyperbola)
-    {
-      return BT_INFINITY;
-    }
-    else
-    {
-      return mElements.a * (1.0 + mElements.Ecc);
-    }
+    return mElements.a * (1.0 + mElements.Ecc);
   }
 
   btScalar Orbit::calcLAN() const
@@ -678,7 +671,7 @@ namespace mKOST
     }
     else
     {
-      /* Avoid acos out of range. 1 and -1 are included cause we now the result. */
+      /* Avoid acos out of range. 1 and -1 are included cause we know the result. */
       if (cosEccentricAnomaly <= -1.0)
       {
         eccentricAnomaly = SIMD_PI;

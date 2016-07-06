@@ -9,15 +9,15 @@ int main (int argc, char* argv[])
 {
   /** Alternative test, with an initial param list at t0 */
   mKOST::Elements elements;
-  elements.a = -1.3286904448293069;
-  elements.Ecc = 1229025;
-  elements.i = SIMD_HALF_PI;
-  elements.LoP = -SIMD_HALF_PI;
-  elements.LAN = 0.0;
+  elements.a = 8660.442;
+  elements.Ecc = 0.9999710e-01;
+  elements.i = 2.356194;
+  elements.LoP = 2.526092;
+  elements.LAN = 1.570796;
 
   mKOST::Orbit orbit (MU, elements);
 
-  mKOST::StateVectors out = orbit.elements2StateVector (SIMD_HALF_PI, SIMD_EPSILON, 1000000);
+  mKOST::StateVectors out = orbit.elements2StateVector (5.678450, SIMD_EPSILON, 1000000);
   printf ("state:\n"
           "  position: %f, %f, %f\n"
           "  velocity: %f, %f, %f\n",
@@ -38,7 +38,7 @@ int main (int argc, char* argv[])
   params = orbit.getParams();
   std::cout << params << std::endl;
 
-  out = orbit.elements2StateVector(SIMD_HALF_PI, SIMD_EPSILON, 1000);
+  out = orbit.elements2StateVector(5.678450, SIMD_EPSILON, 1000);
   printf ("state:\n"
           "  position: %f, %f, %f\n"
           "  velocity: %f, %f, %f\n",
