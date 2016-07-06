@@ -626,7 +626,7 @@ namespace mKOST
       int i (0);
       do
         {
-          if (!Circular && !Hyperbola)   /** elliptical orbit */
+          if (mElements.Ecc < 1.0)   /** elliptical orbit */
             {
               /** calculate next estimate of the root of Kepler's equation using Newton's method */
               ecaEstimate = ecaEstimate - (ecaEstimate - mElements.Ecc * std::sin (ecaEstimate) - meanAnomaly) / (1.0 - mElements.Ecc * std::cos (ecaEstimate));
@@ -644,10 +644,10 @@ namespace mKOST
           relativeError = 1.0 - mnaEstimate / meanAnomaly;
           ++i;
         }
-      while ( (i < maxIterations) && (std::fabs (relativeError) > std::fabs (maxRelativeError) ) );
+      while ((i < maxIterations) && (std::fabs (relativeError) > std::fabs (maxRelativeError)));
     }
 
-    if (!Hyperbola)
+    if (mElements.Ecc < 1.0)
       {
         /** check range is in 0 to 2π */
         ecaEstimate = std::fmod (ecaEstimate, SIMD_2_PI);
