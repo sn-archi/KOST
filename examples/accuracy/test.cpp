@@ -11,7 +11,7 @@ void testState (mKOST::StateVectors* sv)
   mKOST::Orbit orbit (MU, sv);
 
   /** Convert back to state vector */
-  mKOST::StateVectors out (orbit.elements2StateVector (sv->MeL, SIMD_EPSILON, 1000000));
+  mKOST::StateVectors out (orbit.elements2StateVector (sv->MeL, 10 * SIMD_EPSILON, 1000000));
 
   /** Compute the difference between the two state vectors and get an error ratio based on the vector length */
   btVector3 diff (sv->pos - out.pos);
@@ -56,7 +56,10 @@ int main (int argc, char* argv[])
   mKOST::StateVectors sv;
   int rmin = 4, rmax = 10, vmin = 0, vmax = 4;
   int counter (0);
-  int skipped (0);
+  int nosol (0);
+  int mnaisnan (0);
+  int hnull (0);
+  int other (0);
 
   /** Arbitrary 6D positions */
   for (rx = rmin; rx <= rmax; ++rx)
@@ -92,10 +95,17 @@ int main (int argc, char* argv[])
                           {
                             testState (&sv);
                           }
-                          catch (const char * errMsg)
+                          catch (const int errMsg)
                           {
                             //std::cout << errMsg << std::endl;
-                            ++skipped;
+                            if (errMsg == 1)
+                              ++nosol;
+                            if (errMsg == 2)
+                              ++mnaisnan;
+                            if (errMsg == 3)
+                              ++hnull;
+                            else ++other;
+
                           }
                           ++counter;
                         }
@@ -103,7 +113,10 @@ int main (int argc, char* argv[])
   printf ("maxRerror = %e\n", maxRerror);
   printf ("maxVerror = %e\n", maxVerror);
   printf ("tests done: %i\n", counter);
-  printf ("tests skipped: %i\n", skipped);
+  printf ("No acceptable solution found: %i\n", nosol);
+  printf ("Fucked up Mean anomaly estimate: %i\n", mnaisnan);
+  printf ("Null angular momentum: %i\n", hnull);
+  printf ("Other issues: %i\n", other);
 
   return 0;
 }

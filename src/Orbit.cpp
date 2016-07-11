@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include "Orbit.h"
+#include <math.h>
 
 namespace mKOST
 {
@@ -69,7 +70,7 @@ namespace mKOST
 
     /** If velocity and position vectors are parallel and aligned, throw an ecception */
     if (h.isZero())
-      throw "Angular momentum is null !";
+      throw 3;
 
     calcN(&h);
     if (n.length() < SIMD_EPSILON)
@@ -614,51 +615,54 @@ namespace mKOST
   btScalar Orbit::calcEcA (btScalar meanAnomaly, btScalar ecaEstimate, btScalar maxRelativeError, int maxIterations) const
   {
     if (Circular)
-      {
-        return meanAnomaly;
-      }
+      return meanAnomaly;
 
     btScalar relativeError, mnaEstimate;
+
+    if (isnan(ecaEstimate))
+      throw 2;
 
     if (meanAnomaly == 0.0) return 0.0;
     else
     {
       int i (0);
       do
+      {
+        if (mElements.Ecc < 1.0)   /** elliptical orbit */
         {
-          if (mElements.Ecc < 1.0)   /** elliptical orbit */
-            {
-              /** calculate next estimate of the root of Kepler's equation using Newton's method */
-              ecaEstimate = ecaEstimate - (ecaEstimate - mElements.Ecc * std::sin (ecaEstimate) - meanAnomaly) / (1.0 - mElements.Ecc * std::cos (ecaEstimate));
-              /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
-              mnaEstimate = ecaEstimate - mElements.Ecc * std::sin (ecaEstimate);
-            }
-          else   /** hyperbolic orbit */
-            {
-              /** calculate next estimate of the root of Kepler's equation using Newton's method */
-              ecaEstimate = ecaEstimate - (mElements.Ecc * std::sinh (ecaEstimate) - ecaEstimate - meanAnomaly) / (mElements.Ecc * std::cosh (ecaEstimate) - 1.0);
-              /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
-              mnaEstimate = mElements.Ecc * std::sinh (ecaEstimate) - ecaEstimate;
-            }
-          /** calculate relativeError */
-          relativeError = 1.0 - mnaEstimate / meanAnomaly;
-          ++i;
+          /** calculate next estimate of the root of Kepler's equation using Newton's method */
+          ecaEstimate = ecaEstimate - (ecaEstimate - mElements.Ecc * std::sin (ecaEstimate) - meanAnomaly) / (1.0 - mElements.Ecc * std::cos (ecaEstimate));
+          /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
+          mnaEstimate = ecaEstimate - mElements.Ecc * std::sin (ecaEstimate);
         }
+        else   /** hyperbolic orbit */
+        {
+          /** calculate next estimate of the root of Kepler's equation using Newton's method */
+          ecaEstimate = ecaEstimate - (mElements.Ecc * std::sinh (ecaEstimate) - ecaEstimate - meanAnomaly) / (mElements.Ecc * std::cosh (ecaEstimate) - 1.0);
+          /** calculate estimate of mean anomaly from estimate of eccentric anomaly */
+          mnaEstimate = mElements.Ecc * std::sinh (ecaEstimate) - ecaEstimate;
+        }
+        /** calculate relativeError */
+        relativeError = 1.0 - mnaEstimate / meanAnomaly;
+        ++i;
+      }
       while ((i < maxIterations) && (std::fabs (relativeError) > std::fabs (maxRelativeError)));
     }
-
     if (mElements.Ecc < 1.0)
-      {
-        /** check range is in 0 to 2π */
-        ecaEstimate = std::fmod (ecaEstimate, SIMD_2_PI);
-        if (ecaEstimate < 0.0) ecaEstimate += SIMD_2_PI;
-        if (ecaEstimate >= SIMD_2_PI) ecaEstimate -= SIMD_2_PI;
-      }
+    {
+      /** check range is in 0 to 2π */
+      ecaEstimate = std::fmod (ecaEstimate, SIMD_2_PI);
+      if (ecaEstimate < 0.0) ecaEstimate += SIMD_2_PI;
+      if (ecaEstimate >= SIMD_2_PI) ecaEstimate -= SIMD_2_PI;
+    }
 
     if ( std::fabs (relativeError) <= std::fabs (maxRelativeError) )
       return ecaEstimate;
     else
-      throw "No acceptable solution found";
+    {
+      std::cout << mElements << "," << ecaEstimate << "," << mnaEstimate << "\n";
+      throw 1;
+    }
   }
 
   btScalar Orbit::calcEcA(StateVectors* state) const
