@@ -19,7 +19,6 @@
  ***************************************************************************/
 
 #include "Orbit.h"
-#include <math.h>
 
 namespace mKOST
 {
@@ -534,7 +533,20 @@ namespace mKOST
     }
     else
     {
-      btScalar AgP (std::acos (n.dot (e) / (n.length() * mElements.Ecc)));
+      btScalar AgP;
+      btScalar temp (n.dot (e) / (n.length() * mElements.Ecc));
+      if (temp >= 1.0)
+      {
+        AgP = 0.0;
+      }
+      else if (temp <= -1.0)
+      {
+        AgP = SIMD_PI;
+      }
+      else
+      {
+        AgP = std::acos (temp);
+      }
       return (e.getY() < 0.0)?SIMD_2_PI - AgP:AgP;
     }
   }
@@ -581,16 +593,23 @@ namespace mKOST
     if (mElements.Ecc < 1.0)
     {
       eccentricAnomaly = calcEcA (meanAnomaly,
-               meanAnomaly,
-               maxRelativeError,
-               maxIterations);
+                                  meanAnomaly,
+                                  maxRelativeError,
+                                  maxIterations);
     }
     else
     {
-      eccentricAnomaly = calcEcA (meanAnomaly,
-               std::log (2.0 * meanAnomaly / mElements.Ecc + 1.8),
-               maxRelativeError,
-               maxIterations);
+      if (meanAnomaly !=0.0)
+      {
+        eccentricAnomaly = calcEcA (meanAnomaly,
+                                    meanAnomaly/std::fabs(meanAnomaly) * std::log (2.0 * std::fabs(meanAnomaly) / mElements.Ecc + 1.8),
+                                    maxRelativeError,
+                                    maxIterations);
+      }
+      else
+      {
+        eccentricAnomaly = calcEcA (meanAnomaly, 0.0, maxRelativeError, maxIterations);
+      }
     }
 
     /* calc true anomaly */
