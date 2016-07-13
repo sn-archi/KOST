@@ -10,8 +10,8 @@ int main (int argc, char* argv[])
 {
   /** Initial state at t=0 */
   mKOST::StateVectors initial;
-  initial.pos = btVector3 (-1.000000e+10, -1.000000e+04, -1.000000e+10);
-  initial.vel = btVector3 (1.000000e+04, -1.000000e+00, -1.000000e+04);
+  initial.pos = btVector3 (-1.000000e+6, -1.000000e+04, -1.000000e+6);
+  initial.vel = btVector3 (0.0, 0.0, -1.000000e+04);
   mKOST::Orbit orbit;
 
   /** Convert to orbital elements */
@@ -47,9 +47,9 @@ int main (int argc, char* argv[])
   mKOST::StateVectors out;
   try
   {
-    out = orbit.elements2StateVector (initial.MeL, SIMD_EPSILON, 1000000);
+    out = orbit.elements2StateVector (initial.MeL, EPSILON, 1000000);
   }
-  catch (const char * errMsg)
+  catch (int errMsg)
   {
     std::cout << errMsg << std::endl;
   }
@@ -81,7 +81,7 @@ int main (int argc, char* argv[])
     mKOST::StateVectors stateNow;
     try
     {
-      stateNow = orbit.elements2StateVectorAtTime (initial.MeL, t, SIMD_EPSILON, 1000000, 0.0, 0.0);
+      stateNow = orbit.elements2StateVectorAtTime (initial.MeL, t, EPSILON, 1000000, 0.0, 0.0);
     }
     catch (const char*)
     {

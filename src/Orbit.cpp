@@ -53,7 +53,7 @@ namespace mKOST
     /** parabolic orbit - approximate to hyperbolic orbit */
     if (mElements.Ecc == 1.0)
     {
-      mElements.Ecc += SIMD_EPSILON;
+      mElements.Ecc += EPSILON;
     }
     calcN();
     refreshParams();
@@ -81,7 +81,7 @@ namespace mKOST
     e is not significantly different from 1.0
     if |h| < √(ε x µ x |r|)
     */
-    if (h.length2() < SIMD_EPSILON * mu * state->pos.length())
+    if (h.length2() < EPSILON * mu * state->pos.length())
     {
       printf("h is %e\n", h.length());
       btVector3 vel (state->vel);
@@ -101,7 +101,7 @@ namespace mKOST
 
       |v_ortho| = √(ε x μ / |r|)
       */
-      btScalar v_ortho_size (std::sqrt (SIMD_EPSILON * mu / state->pos.length()));
+      btScalar v_ortho_size (std::sqrt (EPSILON * mu / state->pos.length()));
 
       /* New orthogonal component */
       btVector3 v_ortho (state->pos.cross (north));
@@ -116,7 +116,7 @@ namespace mKOST
     }
 
     calcN(&h);
-    if (n.length() < SIMD_EPSILON)
+    if (n.length() < EPSILON)
     {
       n = btVector3 (1.0, 0.0, 0.0);
       Equatorial = true;
@@ -125,7 +125,7 @@ namespace mKOST
 
     btScalar E (state->vel.length2() / 2 - mu / state->pos.length());
     if (E == 0.0)
-      E = SIMD_EPSILON;
+      E = EPSILON;
 
     /** Set the e vector from state vectors */
     calcE(state);
@@ -135,22 +135,22 @@ namespace mKOST
     /** parabolic orbit - approximate to hyperbolic orbit */
     if (mElements.Ecc == 1.0)
     {
-      mElements.Ecc += SIMD_EPSILON;
+      mElements.Ecc += EPSILON;
     }
 
-    Circular = mElements.Ecc < SIMD_EPSILON;
+    Circular = mElements.Ecc < EPSILON;
     Hyperbola = mElements.Ecc >= 1.0;
 
     /** parabolic orbit are not supported */
-    if (mElements.Ecc > 1.0 - SIMD_EPSILON && mElements.Ecc < 1.0 + SIMD_EPSILON)
+    if (mElements.Ecc > 1.0 - EPSILON && mElements.Ecc < 1.0 + EPSILON)
     {
       if (E >= 0.0)
       {
-        mElements.Ecc = 1.0 + SIMD_EPSILON; /* Approximate with hyperbolic */
+        mElements.Ecc = 1.0 + EPSILON; /* Approximate with hyperbolic */
       }
       else
       {
-        mElements.Ecc = 1.0 - SIMD_EPSILON; /* Approximate with elliptic */
+        mElements.Ecc = 1.0 - EPSILON; /* Approximate with elliptic */
       }
     }
 
@@ -553,7 +553,7 @@ namespace mKOST
 
   btScalar Orbit::calcLAN() const
   {
-    if (n.length() < SIMD_EPSILON)
+    if (n.length() < EPSILON)
     {
       return 0.0;
     }

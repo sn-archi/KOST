@@ -11,7 +11,7 @@ void testState (mKOST::StateVectors* sv)
   mKOST::Orbit orbit (MU, sv);
 
   /** Convert back to state vector */
-  mKOST::StateVectors out (orbit.elements2StateVector (sv->MeL, 12 * SIMD_EPSILON, 1000000));
+  mKOST::StateVectors out (orbit.elements2StateVector (sv->MeL, EPSILON, 1000000));
 
   /** Compute the difference between the two state vectors and get an error ratio based on the vector length */
   btVector3 diff (sv->pos - out.pos);
