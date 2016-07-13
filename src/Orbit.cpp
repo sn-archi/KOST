@@ -67,9 +67,53 @@ namespace mKOST
   {
     btVector3 h (calcH(state));
 
-    /** If velocity and position vectors are parallel and aligned, throw an ecception */
+    /** If velocity and position vectors are parallel and aligned,
+    then we're in a radial parabolic trajectory.
+    We throw an ecception and movement in this case will be calculated
+    outside of this library. See https://en.wikipedia.org/wiki/Radial_trajectory */
     if (h.isZero())
+    {
       throw 3;
+    }
+
+    /*
+    Radial orbits are not supported.
+    e is not significantly different from 1.0
+    if |h| < √(ε x µ x |r|)
+    */
+    if (h.length2() < SIMD_EPSILON * mu * state->pos.length())
+    {
+      printf("h is %e\n", h.length());
+      btVector3 vel (state->vel);
+      /*
+      We assume that the position is non-zero.
+      Otherwise, we are in a singularity anyway,
+      and no formula will get us out of there.
+      */
+
+      /* component of v parallel to pos */
+      btVector3 v_parallel ((state->pos.dot (vel) / state->pos.length2()) * state->pos);
+
+      /*
+      Calculate how large the orthogonal component
+      should be to make e significantly different
+      from 1.0:
+
+      |v_ortho| = √(ε x μ / |r|)
+      */
+      btScalar v_ortho_size (std::sqrt (SIMD_EPSILON * mu / state->pos.length()));
+
+      /* New orthogonal component */
+      btVector3 v_ortho (state->pos.cross (north));
+      v_ortho = (v_ortho_size / v_ortho.length()) * v_ortho;
+
+      /* replace the old orthogonal part */
+      vel = v_parallel + v_ortho;
+
+      h = state->pos.cross (vel);
+      printf("h length: %e, oldvel: %e, newvel, %e\n", h.length(), state->vel.length(), vel.length());
+      state->vel = vel;
+    }
 
     calcN(&h);
     if (n.length() < SIMD_EPSILON)
