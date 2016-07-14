@@ -10,8 +10,8 @@ int main (int argc, char* argv[])
 {
   /** Initial state at t=0 */
   mKOST::StateVectors initial;
-  initial.pos = btVector3 (-1.000000e+6, -1.000000e+04, -1.000000e+6);
-  initial.vel = btVector3 (0.0, 0.0, -1.000000e+04);
+  initial.pos = btVector3 (-1.000000e+05, -1.000000e+04, -1.000000e+05);
+  initial.vel = btVector3 (1.000000e+01, -1.000000e+00, 1.000000e+01);
   mKOST::Orbit orbit;
 
   /** Convert to orbital elements */

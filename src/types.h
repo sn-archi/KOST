@@ -27,6 +27,11 @@
 #include "Elements.h"
 #include "Params.h"
 
+/* Data about central body (earth) */
+#define MU 3.986004418e14
+#define R 6378100.0
+#define EPSILON 12*SIMD_EPSILON
+
 namespace mKOST
 {
   ATTRIBUTE_ALIGNED16(struct) StateVectors
