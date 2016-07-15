@@ -27,33 +27,11 @@
 #include "Elements.h"
 #include "Params.h"
 #include "StateVectors.h"
+#include "OrbitShape.h"
 
 /* Data about central body (earth) */
 #define MU 3.986004418e14
 #define R 6378100.0
 #define EPSILON 12*SIMD_EPSILON
 
-namespace mKOST
-{
-  ATTRIBUTE_ALIGNED16(struct) OrbitShape
-  {
-    btVector3 pe;            /**< Periaspsis position */
-    btVector3 ap;            /**< Apoapsis position */
-    btVector3 dn;            /**< Descending node position */
-    btVector3 an;            /**< Ascending node position */
-    btVector3* points;       /**< points */
-    unsigned int numPoints;  /**< numPoints */
-
-    BT_DECLARE_ALIGNED_ALLOCATOR();
-
-    OrbitShape()
-    : pe (0.0, 0.0, 0.0),
-    ap (0.0, 0.0, 0.0),
-    dn (0.0, 0.0, 0.0),
-    an (0.0, 0.0, 0.0),
-    points (nullptr),
-    numPoints (0)
-    {}
-  };
-}
 #endif // TYPES_H
