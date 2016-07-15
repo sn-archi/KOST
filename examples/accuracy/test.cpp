@@ -54,7 +54,7 @@ int main (int argc, char* argv[])
 {
   int rx, ry, rz, vx, vy, vz;
   mKOST::StateVectors sv;
-  int rmin = 4, rmax = 10, vmin = 0, vmax = 4;
+  int rmin = 6, rmax = 12, vmin = 3, vmax = 6;
   int counter (0);
   int nosol (0);
   int mnaisnan (0);

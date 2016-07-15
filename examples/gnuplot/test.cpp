@@ -20,7 +20,7 @@ int main (int argc, char* argv[])
     orbit.setMu (MU);
     orbit.refreshFromStateVectors(&initial);
   }
-  catch (const char*)
+  catch (int)
   {
     return 1;
   }

@@ -111,7 +111,6 @@ namespace mKOST
       vel = v_parallel + v_ortho;
 
       h = state->pos.cross (vel);
-      printf("h length: %e, oldvel: %e, newvel, %e\n", h.length(), state->vel.length(), vel.length());
       state->vel = vel;
     }
 
@@ -514,7 +513,8 @@ namespace mKOST
   void Orbit::calcN(btVector3 *h)
   {
     n = btVector3(h->getZ(), 0.0, -h->getX());
-    n.normalize();
+    if (!n.isZero())
+      n.normalize();
   }
 
   void Orbit::calcN ()
