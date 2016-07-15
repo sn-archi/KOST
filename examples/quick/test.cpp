@@ -18,16 +18,9 @@ int main (int argc, char* argv[])
   mKOST::Orbit orbit (MU, elements);
 
   mKOST::StateVectors out = orbit.elements2StateVector (0.35485236693591626, 12 * SIMD_EPSILON, 1000000);
-  printf ("state:\n"
-          "  position: %f, %f, %f\n"
-          "  velocity: %f, %f, %f\n",
-          out.pos.getX(),
-          out.pos.getY(),
-          out.pos.getZ(),
-          out.vel.getX(),
-          out.vel.getY(),
-          out.vel.getZ()
-          );
+
+  std::cout << "initial:\n" << out << std::endl;
+
   std::cout << elements << std::endl;
   mKOST::Params params (orbit.getParams());
   std::cout << params << std::endl;
@@ -39,15 +32,8 @@ int main (int argc, char* argv[])
   std::cout << params << std::endl;
 
   out = orbit.elements2StateVector(0.35485236693591626, 12 * SIMD_EPSILON, 1000000);
-  printf ("state:\n"
-          "  position: %f, %f, %f\n"
-          "  velocity: %f, %f, %f\n",
-          out.pos.getX(),
-          out.pos.getY(),
-          out.pos.getZ(),
-          out.vel.getX(),
-          out.vel.getY(),
-          out.vel.getZ()
-          );
+
+  std::cout << "reversed:\n" << out << std::endl;
+
   return 0;
 }

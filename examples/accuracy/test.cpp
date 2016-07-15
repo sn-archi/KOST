@@ -21,14 +21,7 @@ void testState (mKOST::StateVectors* sv)
   {
     maxRerror = error;
     sv_maxRerror = *sv;
-
-    printf ("New pos error max:\n"
-            "     pos  = %e, %e, %e\n"
-            "     vel  = %e, %e, %e\n"
-            "     error = %f\n",
-            sv->pos.getX(), sv->pos.getY(), sv->pos.getZ(),
-            sv->vel.getX(), sv->vel.getY(), sv->vel.getZ(),
-            maxRerror);
+    std::cout << "New pos error max:\n" << *sv << "\nerror = " << maxRerror << std::endl;
   }
 
   diff = sv->vel - out.vel;
@@ -38,15 +31,7 @@ void testState (mKOST::StateVectors* sv)
   {
     maxVerror = error;
     sv_maxVerror = *sv;
-
-    printf ("New vel error max:\n"
-            "     pos = %e, %e, %e\n"
-            "     vel = %e, %e, %e\n"
-            "     error = %f\n",
-            sv->pos.getX(), sv->pos.getY(), sv->pos.getZ(),
-            sv->vel.getX(), sv->vel.getY(), sv->vel.getZ(),
-            maxVerror
-           );
+    std::cout << "New vel error max:\n" << *sv << "\nerror = " << maxRerror << std::endl;
   }
 }
 
@@ -97,7 +82,6 @@ int main (int argc, char* argv[])
                           }
                           catch (const int errMsg)
                           {
-                            //std::cout << errMsg << std::endl;
                             if (errMsg == 1)
                               ++nosol;
                             if (errMsg == 2)
@@ -110,13 +94,13 @@ int main (int argc, char* argv[])
                           ++counter;
                         }
             }
-  printf ("maxRerror = %e\n", maxRerror);
-  printf ("maxVerror = %e\n", maxVerror);
-  printf ("tests done: %i\n", counter);
-  printf ("No acceptable solution found: %i\n", nosol);
-  printf ("Fucked up Mean anomaly estimate: %i\n", mnaisnan);
-  printf ("Null angular momentum: %i\n", hnull);
-  printf ("Other issues: %i\n", other);
+  std::cout << "maxRerror = " << maxRerror << std::endl;
+  std::cout << "maxVerror = " << maxVerror << std::endl;
+  std::cout << "tests done: " << counter << std::endl;
+  std::cout << "No acceptable solution found: " << nosol << std::endl;
+  std::cout << "Fucked up Mean anomaly estimate: " << mnaisnan << std::endl;
+  std::cout << "Null angular momentum: " << hnull << std::endl;
+  std::cout << "Other issues: " << other << std::endl;
 
   return 0;
 }

@@ -25,18 +25,7 @@ int main (int argc, char* argv[])
     return 1;
   }
 
-  printf ("initial:\n"
-        "  position: %e, %e, %e\n"
-        "  velocity: %e, %e, %e\n"
-        "  Mean Longitude: %e\n-----\n",
-        initial.pos.getX(),
-        initial.pos.getY(),
-        initial.pos.getZ(),
-        initial.vel.getX(),
-        initial.vel.getY(),
-        initial.vel.getZ(),
-        initial.MeL
-        );
+  std::cout << "initial:\n" << initial << std::endl;
 
   mKOST::Elements elements (orbit.getElements());
   std::cout << elements << std::endl;
@@ -54,16 +43,7 @@ int main (int argc, char* argv[])
     std::cout << errMsg << std::endl;
   }
 
-  printf ("reversed:\n"
-          "  position: %e, %e, %e\n"
-          "  velocity: %e, %e, %e\n-----\n",
-          out.pos.getX(),
-          out.pos.getY(),
-          out.pos.getZ(),
-          out.vel.getX(),
-          out.vel.getY(),
-          out.vel.getZ()
-          );
+  std::cout << "reversed:\n" << out << std::endl;
 
   orbit.refreshFromStateVectors (&out);
   elements = orbit.getElements();
@@ -83,9 +63,9 @@ int main (int argc, char* argv[])
     {
       stateNow = orbit.elements2StateVectorAtTime (initial.MeL, t, EPSILON, 1000000, 0.0, 0.0);
     }
-    catch (const char*)
+    catch (int)
     {
-      printf ("Couldn't find a root\n");
+      std::cout << "Couldn't find a root\n" << std::endl;
     }
     output[i] = stateNow.pos;
   }

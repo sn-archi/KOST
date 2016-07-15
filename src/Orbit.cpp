@@ -83,7 +83,6 @@ namespace mKOST
     */
     if (h.length2() < EPSILON * mu * state->pos.length())
     {
-      printf("h is %e\n", h.length());
       btVector3 vel (state->vel);
       /*
       We assume that the position is non-zero.
@@ -723,7 +722,6 @@ namespace mKOST
       return ecaEstimate;
     else
     {
-      std::cout << mElements << "," << ecaEstimate << "," << mnaEstimate << "\n";
       throw 1;
     }
   }
