@@ -37,3 +37,6 @@ quick_test
 ValgrindOut.xml
 test.plot
 CppCheckResults.xml
+doc/html/
+doc/latex/
+doc/doxygen.log

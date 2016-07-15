@@ -1,117 +1,106 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cmath>
-
+#include <iostream>
 #include "../../src/mKOST.h"
 
-mKOST::sStateVector sv_maxVerror, sv_maxRerror;
-btScalar maxVerror = -1.0, maxRerror = -1.0;
+/** TODO: Globals are evil */
+mKOST::StateVectors sv_maxVerror, sv_maxRerror;
+btScalar maxVerror (-1.0), maxRerror (-1.0);
 
-int testState (const mKOST::sStateVector* sv)
+void testState (mKOST::StateVectors* sv)
 {
-  mKOST::sElements elements;
-  mKOST::sStateVector out;
-  btVector3 diff;
-  btScalar error;
-  int ret;
+  /** Convert to orbital elements */
+  mKOST::Orbit orbit (MU, sv);
 
-  /*Convert to orbital elements*/
-  if (mKOST::stateVector2Elements (MU, sv, &elements, NULL))
-    return 1;
+  /** Convert back to state vector */
+  mKOST::StateVectors out (orbit.elements2StateVector (sv->MeL, EPSILON, 1000000));
 
-  /*Convert back to state vector*/
-  ret = mKOST::elements2StateVector (MU, &elements, &out, 10 * SIMD_EPSILON, 1000000);
-
-  diff = sv->pos - out.pos;
-  error = (diff.length() / sv->pos.length());
+  /** Compute the difference between the two state vectors and get an error ratio based on the vector length */
+  btVector3 diff (sv->pos - out.pos);
+  btScalar error (diff.length() / sv->pos.length());
 
   if (error > maxRerror)
-    {
-      maxRerror = error;
-      sv_maxRerror = *sv;
-
-      printf ("New pos error max:\n"
-              "     pos  = %e, %e, %e\n"
-              "     out  = %e, %e, %e\n"
-              "     diff = %e, %e, %e\n"
-              "     vel  = %e, %e, %e\n"
-              "     error = %f\n",
-              sv->pos.getX(), sv->pos.getY(), sv->pos.getZ(),
-              out.pos.getX(), out.pos.getY(), out.pos.getZ(),
-              diff.getX(), diff.getY(), diff.getZ(),
-              sv->vel.getX(), sv->vel.getY(), sv->vel.getZ(),
-              maxRerror);
-    }
+  {
+    maxRerror = error;
+    sv_maxRerror = *sv;
+    std::cout << "New pos error max:\n" << *sv << "\nerror = " << maxRerror << std::endl;
+  }
 
   diff = sv->vel - out.vel;
   error = (diff.length() / sv->vel.length());
 
   if (error > maxVerror)
-    {
-      maxVerror = error;
-      sv_maxVerror = *sv;
-
-      printf ("New vel error max:\n"
-              "     pos = %e, %e, %e\n"
-              "     vel = %e, %e, %e\n"
-              "     diff = %e, %e, %e\n"
-              "     error = %f\n",
-              sv->pos.getX(), sv->pos.getY(), sv->pos.getZ(),
-              sv->vel.getX(), sv->vel.getY(), sv->vel.getZ(),
-              diff.getX(), diff.getY(), diff.getZ(),
-              maxVerror
-             );
-    }
-  return 0;
+  {
+    maxVerror = error;
+    sv_maxVerror = *sv;
+    std::cout << "New vel error max:\n" << *sv << "\nerror = " << maxRerror << std::endl;
+  }
 }
 
 int main (int argc, char* argv[])
 {
   int rx, ry, rz, vx, vy, vz;
-  mKOST::sStateVector sv;
-  int rmin = 4, rmax = 12, vmin = 0, vmax = 5;
+  mKOST::StateVectors sv;
+  int rmin = 6, rmax = 12, vmin = 3, vmax = 7;
   int counter (0);
-  int skipped (0);
+  int nosol (0);
+  int mnaisnan (0);
+  int hnull (0);
+  int other (0);
 
-  /*Arbitrary 6D positions*/
+  /** Arbitrary 6D positions */
   for (rx = rmin; rx <= rmax; ++rx)
     for (rz = rmin; rz <= rmax; ++rz)
       for (ry = rmin; ry <= rmax; ++ry)
         for (vx = vmin; vx <= vmax; ++vx)
           for (vz = vmin; vz <= vmax; ++vz)
             for (vy = vmin; vy <= vmax; ++vy)
-              {
-                double rxf = std::pow (10.0, rx);
-                double ryf = std::pow (10.0, ry);
-                double rzf = std::pow (10.0, rz);
-                double vxf = std::pow (10.0, vx);
-                double vyf = std::pow (10.0, vy);
-                double vzf = std::pow (10.0, vz);
+            {
+              double rxf = std::pow (10.0, rx);
+              double ryf = std::pow (10.0, ry);
+              double rzf = std::pow (10.0, rz);
+              double vxf = std::pow (10.0, vx);
+              double vyf = std::pow (10.0, vy);
+              double vzf = std::pow (10.0, vz);
 
-                int srx, sry, srz, svx, svy, svz;
-                for (srx = -1; srx <= 1; ++srx)
-                  for (sry = -1; sry <= 1; ++sry)
-                    for (srz = -1; srz <= 1; ++srz)
-                      for (svx = -1; svx <= 1; ++svx)
-                        for (svy = -1; svy <= 1; ++svy)
-                          for (svz = -1; svz <= 1; ++svz)
-                            {
-                              if ((srx == 0) || (sry == 0) || (srz == 0))
-                                continue;
-                              if ((svx == 0) || (svy == 0) || (svz == 0))
-                                continue;
+              int srx, sry, srz, svx, svy, svz;
+              for (srx = -1; srx <= 1; ++srx)
+                for (sry = -1; sry <= 1; ++sry)
+                  for (srz = -1; srz <= 1; ++srz)
+                    for (svx = -1; svx <= 1; ++svx)
+                      for (svy = -1; svy <= 1; ++svy)
+                        for (svz = -1; svz <= 1; ++svz)
+                        {
+                          if ((srx == 0) || (sry == 0) || (srz == 0))
+                            continue;
+                          if ((svx == 0) || (svy == 0) || (svz == 0))
+                            continue;
 
-                              sv.pos = btVector3 (srx * rxf, sry * ryf, srz * rzf);
-                              sv.vel = btVector3 (svx * vxf, svy * vyf, svz * vzf);
-                              if (testState (&sv))
-                                ++skipped;
-                              ++counter;
-                            }
-              }
-  printf ("maxRerror = %e\n", maxRerror);
-  printf ("maxVerror = %e\n", maxVerror);
-  printf ("tests done: %i\n", counter);
-  printf ("tests skipped: %i\n", skipped);
+                          sv.pos = btVector3 (srx * rxf, sry * ryf, srz * rzf);
+                          sv.vel = btVector3 (svx * vxf, svy * vyf, svz * vzf);
+                          try
+                          {
+                            testState (&sv);
+                          }
+                          catch (const int errMsg)
+                          {
+                            if (errMsg == 1)
+                              ++nosol;
+                            if (errMsg == 2)
+                              ++mnaisnan;
+                            if (errMsg == 3)
+                              ++hnull;
+                            else ++other;
+
+                          }
+                          ++counter;
+                        }
+            }
+  std::cout << "maxRerror = " << maxRerror << std::endl;
+  std::cout << "maxVerror = " << maxVerror << std::endl;
+  std::cout << "tests done: " << counter << std::endl;
+  std::cout << "No acceptable solution found: " << nosol << std::endl;
+  std::cout << "Fucked up Mean anomaly estimate: " << mnaisnan << std::endl;
+  std::cout << "Null angular momentum: " << hnull << std::endl;
+  std::cout << "Other issues: " << other << std::endl;
 
   return 0;
 }

@@ -18,60 +18,20 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-/*
-KOST is the Kepler Orbit Simulation Toolkit.
-This header defines the data types of KOST.
-*/
-
 #ifndef TYPES_H
 #define TYPES_H
 
 #include "LinearMath/btScalar.h"
 #include "LinearMath/btVector3.h"
 #include "LinearMath/btMatrix3x3.h"
+#include "Elements.h"
+#include "Params.h"
+#include "StateVectors.h"
+#include "OrbitShape.h"
 
-namespace mKOST
-{
-  typedef struct
-  {
-    btScalar a;      /*Semi-major axis*/
-    btScalar e;      /*Eccentricity*/
-    btScalar i;      /*Inclination*/
-    btScalar LaN;    /*Longitude of ascending node*/
-    btScalar LoP;    /*Longitude of periapsis*/
-    btScalar L;      /*Mean longitude at epoch*/
-  } sElements;
+/* Data about central body (earth) */
+#define MU 3.986004418e14
+#define R 6378100.0
+#define EPSILON 12*SIMD_EPSILON
 
-  typedef struct
-  {
-    /*Same as ORBITPARAM*/
-    btScalar SMi;  /*semi-minor axis*/
-    btScalar PeD;  /*periapsis distance*/
-    btScalar ApD;  /*apoapsis distance*/
-    btScalar MnA;  /*mean anomaly*/
-    btScalar TrA;  /*true anomaly*/
-    btScalar MnL;  /*mean longitude*/
-    btScalar TrL;  /*true longitude*/
-    btScalar EcA;  /*eccentric anomaly*/
-    btScalar Lec;  /*linear eccentricity*/
-    btScalar T;    /*orbit period*/
-    btScalar PeT;  /*time to next periapsis passage*/
-    btScalar ApT;  /*time to next apoapsis passage*/
-    btScalar AgP;  /*argument of periapsis*/
-  } sOrbitParam;
-
-  typedef struct
-  {
-    btVector3 pos;
-    btVector3 vel;
-  } sStateVector;
-
-  typedef struct
-  {
-    btVector3 pe, ap, dn, an;
-    btVector3* points;
-    unsigned int numPoints;
-  } sOrbitShape;
-}
 #endif // TYPES_H
-
