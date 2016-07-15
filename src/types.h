@@ -26,6 +26,7 @@
 #include "LinearMath/btMatrix3x3.h"
 #include "Elements.h"
 #include "Params.h"
+#include "StateVectors.h"
 
 /* Data about central body (earth) */
 #define MU 3.986004418e14
@@ -34,21 +35,6 @@
 
 namespace mKOST
 {
-  ATTRIBUTE_ALIGNED16(struct) StateVectors
-  {
-    btVector3 pos;  /**< Position */
-    btVector3 vel;  /**< Velocity */
-    btScalar MeL;   /**< Mean longitude at epoch */
-
-    BT_DECLARE_ALIGNED_ALLOCATOR();
-
-    StateVectors()
-    : pos (0.0, 0.0, 0.0),
-    vel (0.0, 0.0, 0.0),
-    MeL (SIMD_INFINITY)
-    {}
-  };
-
   ATTRIBUTE_ALIGNED16(struct) OrbitShape
   {
     btVector3 pe;            /**< Periaspsis position */
